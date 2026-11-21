@@ -33,6 +33,7 @@ func _ready() -> void:
 	await _physics(30)
 	var half: Vector2 = get_viewport().get_visible_rect().size / 2.0 / m.camera.zoom
 	print("    screen half-extent %s, bot %.0f px away, cam center %s me %s bot %s user=%s" % [half, me.global_position.distance_to(bot.global_position), m.camera.get_screen_center_position(), me.global_position, bot.global_position, me.data.is_user])
+	print("    los=%s sees=%s onscreen=%s" % [m.has_wall_los(bot.global_position, me.global_position), m.sees(bot, me), m.on_users_screen(bot, me)])
 	_check("off-screen bot with clear sight can't see you", m.has_wall_los(bot.global_position, me.global_position) and not m.sees(bot, me))
 	# Same bot, now on screen.
 	bot.global_position = me.global_position.lerp(bot.global_position, 0.45)

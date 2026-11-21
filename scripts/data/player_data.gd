@@ -18,14 +18,14 @@ const STAT_NAMES := {
 }
 const STAT_HELP := {
 	"aim": "First-shot accuracy.",
-	"flick": "Time to target: how fast your crosshair swings onto an enemy once you've reacted.",
-	"preaim": "Crosshair placement: aiming where enemies will appear, so there's less to flick.",
+	"flick": "Time to target: how fast your crosshair swings onto an enemy, and how soon a shot after a flick is accurate.",
+	"preaim": "Crosshair placement: aiming where enemies will appear, so there's less to flick. Holding an angle steadies your first shot.",
 	"recoil": "How much your spray blooms while holding fire.",
-	"reaction": "How fast you notice enemies, respond to being shot, and track targets.",
+	"reaction": "How fast you notice enemies, shake off getting shot (aim punch), and track targets.",
 	"movement": "Run speed and accuracy while moving.",
 	"positioning": "Field of view, holding angles, patience and peeking discipline.",
-	"decision": "Rotations, retakes, buys and mid-round calls.",
-	"utility": "Grenades: how often bots buy and use them, and how accurately they land.",
+	"decision": "Rotations, retakes, buys and mid-round calls. For you: how well you read your team's calls on the radar.",
+	"utility": "Grenades: how often bots buy and use them, and how accurately they land (yours too).",
 }
 ## Short table-header names -> stat key.
 const STAT_SHORT := {"Aim": "aim", "Flk": "flick", "Pre": "preaim", "Rcl": "recoil", "Rct": "reaction",
@@ -205,7 +205,7 @@ func _curve(key: String, pts: Array) -> float:
 
 
 func move_speed() -> float:
-	return lerpf(124.0, 161.0, _t("movement")) # Original 165-215, -40%, then +25%.
+	return lerpf(155.0, 201.0, _t("movement")) # Original 165-215, -40%, then +25%, then +25%.
 
 
 ## Multiplier on a weapon's moving inaccuracy. Good movement = cleaner counter-strafes.
@@ -227,7 +227,9 @@ func recoil_mult() -> float:
 
 
 func reaction_time() -> float:
-	return _curve("reaction", [[20, 1.6], [40, 1.25], [60, 0.85], [80, 0.6], [95, 0.5], [100, 0.46]])
+	if Game.ab_flag("old_ai2"):
+		return _curve("reaction", [[20, 1.6], [40, 1.25], [60, 0.85], [80, 0.6], [95, 0.5], [100, 0.46]])
+	return _curve("reaction", [[20, 1.3], [40, 1.0], [60, 0.7], [80, 0.5], [95, 0.42], [100, 0.39]])
 
 
 ## Max crosshair swing speed (degrees/second). Humans flick ~300-900 deg/s.
@@ -282,6 +284,60 @@ func rotate_delay() -> float:
 	return _curve("decision", [[20, 12.0], [40, 9.0], [60, 4.5], [80, 2.5], [100, 1.5]])
 
 
+# --- Your own player (mouse and keyboard) ----------------------------------
+# The stats a bot uses to aim and think also shape how your hands behave.
+# All of these are no-ops with --ab=old_skills.
+
+## Flick: extra spread (degrees) for firing mid-swing, at a full-speed flick.
+func user_swing_spread() -> float:
+	return lerpf(9.0, 1.5, _t("flick"))
+
+
+## Flick: how fast that swing wobble settles (per second).
+func user_swing_recover() -> float:
+	return lerpf(5.0, 16.0, _t("flick"))
+
+
+## Flick: scope-in time multiplier.
+func user_scope_mult() -> float:
+	return lerpf(1.3, 0.75, _t("flick"))
+
+
+## Preaim: first-shot spread multiplier once your crosshair has been still on an angle.
+func user_steady_mult() -> float:
+	return lerpf(1.0, 0.55, _t("preaim"))
+
+
+## Reaction: aim punch (degrees of spread) from a 30-damage hit.
+func user_flinch_deg() -> float:
+	return lerpf(7.0, 1.5, _t("reaction"))
+
+
+## Reaction: how fast the aim punch wears off (per second).
+func user_flinch_recover() -> float:
+	return lerpf(2.5, 9.0, _t("reaction"))
+
+
+## Reaction: how fast an enemy fades in when they come into view (per second).
+func user_reveal_rate() -> float:
+	return lerpf(4.0, 16.0, _t("reaction"))
+
+
+## Utility: how far off your grenade lands at full throw range (px).
+func user_throw_scatter() -> float:
+	return lerpf(80.0, 6.0, _t("utility"))
+
+
+## Decision: seconds your team's calls stay on your radar.
+func user_call_time() -> float:
+	return lerpf(4.0, 9.0, _t("decision"))
+
+
+## Decision: how often a called enemy's radar marker refreshes (seconds).
+func user_call_every() -> float:
+	return lerpf(2.2, 0.9, _t("decision"))
+
+
 func preferred_primary() -> int:
 	return WeaponData.SNIPER if role == "AWPer" else WeaponData.RIFLE
 
@@ -306,10 +362,13 @@ static func stat_tooltip(key: String) -> String:
 		"flick":
 			rows = [["Max crosshair swing", func(p: PlayerData) -> String: return "%.0f°/s" % p.flick_speed_deg()],
 				["Settle (snap) rate", func(p: PlayerData) -> String: return "%.0f" % p.flick_settle()]]
-			lines.append("Bots only: you flick with your own mouse.")
+			lines.append("Bots: how fast they swing onto you.")
+			lines.append("You: firing mid-flick adds up to %.1f° spread at 40, %.1f° at 95; it settles %.0fx faster at 95." % [_tip_player(key, 40, true).user_swing_spread(), _tip_player(key, 95, true).user_swing_spread(), _tip_player(key, 95, true).user_swing_recover() / _tip_player(key, 40, true).user_swing_recover()])
+			lines.append("You: scoping in takes %.2fs at 40, %.2fs at 95." % [0.3 * _tip_player(key, 40, true).user_scope_mult(), 0.3 * _tip_player(key, 95, true).user_scope_mult()])
 		"preaim":
 			rows = [["Crosshair pre-placed", func(p: PlayerData) -> String: return "%.0f%%" % (p.preaim_factor() * 100.0)]]
 			lines.append("Bots: how much of the angle to an enemy is already covered when they appear.")
+			lines.append("You: holding still on an angle tightens your first shot to x%.2f at 40, x%.2f at 95." % [_tip_player(key, 40, true).user_steady_mult(), _tip_player(key, 95, true).user_steady_mult()])
 		"recoil":
 			rows = [["Bot spray bloom", func(p: PlayerData) -> String: return "x%.2f" % p.recoil_mult()]]
 			lines.append("Multiplies how much each shot in a spray widens the cone.")
@@ -318,6 +377,7 @@ static func stat_tooltip(key: String) -> String:
 			rows = [["Time to react", func(p: PlayerData) -> String: return "%.2fs" % p.reaction_time()],
 				["Tracking lag", func(p: PlayerData) -> String: return "%.2fs" % p.tracking_lag()]]
 			lines.append("Bots aim where you were 'lag' seconds ago, so strafing beats slow reactions.")
+			lines.append("You: a 30-damage hit punches your aim %.1f° at 40, %.1f° at 95 (wears off %.0fx faster), and enemies pop into view faster." % [_tip_player(key, 40, true).user_flinch_deg(), _tip_player(key, 95, true).user_flinch_deg(), _tip_player(key, 95, true).user_flinch_recover() / _tip_player(key, 40, true).user_flinch_recover()])
 		"movement":
 			rows = [["Run speed", func(p: PlayerData) -> String: return "%.0f px/s" % p.move_speed()],
 				["Run-and-gun penalty", func(p: PlayerData) -> String: return "x%.2f" % p.moving_penalty_mult()],
@@ -332,12 +392,14 @@ static func stat_tooltip(key: String) -> String:
 			rows = [["Rotation delay", func(p: PlayerData) -> String: return "%.1fs" % p.rotate_delay()],
 				["Makes the right save/retake call", func(p: PlayerData) -> String: return "%.0f%%" % ((0.3 + 0.6 * p._t("decision")) * 100.0)]]
 			lines.append("Bots: rotations, retakes, saves, forced buys and peeking discipline.")
+			lines.append("You: team calls stay on your radar %.0fs at 40, %.0fs at 95, and update more often." % [_tip_player(key, 40, true).user_call_time(), _tip_player(key, 95, true).user_call_time()])
 		"utility":
 			rows = [["Throw lands within", func(p: PlayerData) -> String: return "%.0f px" % lerpf(110.0, 12.0, p._t("utility"))],
 				["Uses a good chance", func(p: PlayerData) -> String: return "%.0f%%" % ((0.25 + 0.6 * p._t("utility")) * 100.0)],
 				["Buys each grenade", func(p: PlayerData) -> String: return "%.0f%%" % ((0.3 + 0.65 * p._t("utility")) * 100.0)]]
 			lines.append("Bots: smokes and mollies on CT holds, entry flashes, retake flashes,")
-			lines.append("mollies on the defuser and on a push. Bots only: you throw your own.")
+			lines.append("mollies on the defuser and on a push.")
+			lines.append("You: a full-range throw lands within %.0f px at 40, %.0f px at 95." % [_tip_player(key, 40, true).user_throw_scatter(), _tip_player(key, 95, true).user_throw_scatter()])
 	if not rows.is_empty():
 		lines.append("")
 		var head := "At stat:"
@@ -389,7 +451,23 @@ and players start declining from 30."
 
 # --- Titles ------------------------------------------------------------------
 
-## "Premier League MVP (Season 2)"
+## Titles that exist: "<event> Champion", "<event> Finalist" (lost the final),
+## "<event> Semi Finalist", "<event> Quarter Finalist", the league table
+## ("#1".."#5 in the <league>"), the rating leaderboard ("#1".."#5 Rated in
+## the <league>") and season stat leaders ("Top K/D" / "Most Kills in the <league>").
+const TITLE_PREFIXES := ["#1", "#2", "#3", "#4", "#5", "#1 Rated", "#2 Rated", "#3 Rated", "#4 Rated", "#5 Rated", "Top K/D", "Most Kills"]
+
+
+static func allowed_honour(t: String) -> bool:
+	if t.ends_with(" Champion") or t.ends_with(" Finalist"):
+		return true
+	for pre: String in TITLE_PREFIXES:
+		if t.begins_with(pre + " in the "):
+			return true
+	return false
+
+
+## "#2 Rated in the Premier League (Season 2)"
 static func honour_label(h: Dictionary) -> String:
 	return "%s (Season %d)" % [String(h.t), int(h.s)]
 
@@ -565,7 +643,13 @@ static func from_dict(d: Dictionary) -> PlayerData:
 	p.loan_kind = String(d.get("loan_kind", ""))
 	p.loan_team = int(d.get("loan_team", -1))
 	p.loan_fee = int(d.get("loan_fee", 0))
+	var rx := RegEx.new()
+	rx.compile("^([1-5])(st|nd|rd|th) in the ") # League places were "1st".."5th" before 0.19.
 	for h in d.get("honours", []):
-		p.honours.append({"t": String(h.get("t", "")), "s": int(h.get("s", 1)), "rank": int(h.get("rank", 0))})
-	p.title = String(d.get("title", ""))
+		var ht := rx.sub(String(h.get("t", "")), "#$1 in the ")
+		if allowed_honour(ht): # Old saves: retired title kinds are dropped.
+			p.honours.append({"t": ht, "s": int(h.get("s", 1)), "rank": int(h.get("rank", 0))})
+	p.title = rx.sub(String(d.get("title", "")), "#$1 in the ")
+	if p.title != "" and not p.honours.any(func(h: Dictionary) -> bool: return honour_label(h) == p.title):
+		p.title = p.best_honour()
 	return p

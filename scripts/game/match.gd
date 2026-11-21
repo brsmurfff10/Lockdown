@@ -367,6 +367,7 @@ func _spawn_units() -> void:
 			u.action_finished.connect(_on_action_finished)
 			var ctrl = PlayerController.new() if pd.is_user and not Game.autoplay else BotController.new()
 			ctrl.unit = u
+			u.human = ctrl is PlayerController
 			u.add_child(ctrl)
 			units.append(u)
 			_side_rids[side].append(u.get_rid())
@@ -790,7 +791,46 @@ func team_buy_plan(ti: int) -> String:
 	var next_avg: int = avg + int(LOSS_BONUS[mini(loss_streak[ti], LOSS_BONUS.size() - 1)])
 	if avg >= 2300 and next_avg < 4300:
 		return "force"
+	if not Game.ab_flag("old_ai4") and avg >= 1700:
+		# They're broke too: SMGs and armour farm pistols (an anti-eco force).
+		var their := 0
+		for p: PlayerData in starters[1 - ti]:
+			their += money_of(p)
+		if their / maxi(1, starters[1 - ti].size()) < 1600:
+			return "force"
 	return "eco"
+
+
+static var drops := 0 ## Dev stats: guns bought for a teammate.
+
+
+## Team buy: a rich player buys a gun for a teammate who can't afford one
+## (the classic drop), so the team buys together.
+func _team_drops(ti: int, plan: String) -> void:
+	if Game.ab_flag("old_ai4") or not plan in ["full", "force"]:
+		return
+	var needy: Array[Unit] = []
+	var rich: Array[Unit] = []
+	for u in units:
+		if u.team_index != ti or (u.data.is_user and not Game.autoplay):
+			continue
+		if u.primary == null:
+			needy.append(u)
+		else:
+			rich.append(u)
+	rich.sort_custom(func(a: Unit, b: Unit) -> bool: return money_of(a.data) > money_of(b.data))
+	for n in needy:
+		var gun := WeaponData.pick(n.side, WeaponData.RAPTOR, WeaponData.GUARDIAN) if plan == "full" \
+				else WeaponData.pick(n.side, WeaponData.KODIAK, WeaponData.LANCER)
+		var price := WeaponData.price_of(gun)
+		for r in rich:
+			if money_of(r.data) >= price + 600:
+				loadouts[r.data].money -= price
+				n.give_primary(gun)
+				drops += 1
+				if tactics != null:
+					tactics._say(r, "Dropping you a gun, %s." % n.data.name)
+				break
 
 
 func _bots_buy() -> void:
@@ -800,6 +840,7 @@ func _bots_buy() -> void:
 			if u.team_index != ti or (u.data.is_user and not Game.autoplay):
 				continue
 			_bot_buy(u, plan)
+		_team_drops(ti, plan)
 
 
 ## One bot's shopping: role-based (AWPer snipers, Entry close-range guns, Support
@@ -1066,6 +1107,8 @@ func _draw_bomb() -> void:
 
 func _on_unit_died(victim: Unit, killer: Unit) -> void:
 	stats[victim.data].deaths += 1
+	if victim.side == CT and victim.weapon != null and victim.weapon.cat == WeaponData.SNIPER:
+		tactics.note_awp_death(victim)
 	if phase == Phase.POST_ROUND:
 		postround_kills += 1
 	if killer != null and killer.side != victim.side:
@@ -1694,7 +1737,10 @@ func _update_fog(delta: float) -> void:
 			else:
 				# Bodies: once you've seen them, or when there's a clear line to them.
 				show = u.modulate.a > 0.5 or (viewer.global_position.distance_to(u.global_position) < viewer.data.sight_range() 						and has_line_of_sight(viewer.global_position, u.global_position))
-		u.modulate.a = move_toward(u.modulate.a, 1.0 if show else 0.0, delta * 10.0)
+		var fade := 10.0
+		if show and viewer.human and u.side != viewer.side and not Game.ab_flag("old_skills"):
+			fade = viewer.data.user_reveal_rate() # Reaction: how fast they pop into view.
+		u.modulate.a = move_toward(u.modulate.a, 1.0 if show else 0.0, delta * fade)
 
 
 func _aim_light(l: PointLight2D, u: Unit, scale: float) -> void:
@@ -1855,9 +1901,9 @@ func _exit_tree() -> void:
 
 
 ## Camera leads toward the cursor so you can see where you're aiming.
-## Hold Shift / right mouse for free look (pushes the view much further out),
+## Hold right mouse for free look (pushes the view much further out),
 ## mouse wheel zooms. Spectating follows the teammate without the lead.
-const CAMERA_LEAD := 0.0 ## Fraction of the cursor's offset from screen centre (0: you stay centred; hold Shift to look ahead).
+const CAMERA_LEAD := 0.0 ## Fraction of the cursor's offset from screen centre (0: you stay centred; hold right mouse to look ahead).
 const FREE_LOOK_LEAD := 1.25
 const ZOOM_MIN := 0.45 ## Wheel out: see much more of the map.
 const ZOOM_MAX := 1.2

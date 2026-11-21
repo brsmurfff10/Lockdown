@@ -35,7 +35,8 @@ const KNIFE_ARC := 0.6 ## cos of the half-angle the swipe covers (~53 deg each s
 const KNIFE_DAMAGE := 40.0
 const KNIFE_BACKSTAB := 150.0 ## From behind: a kill even through armour.
 const KNIFE_COOLDOWN := 0.55
-const KNIFE_SPEED := 1.06 ## Running with the knife out is the fastest you move.
+const KNIFE_SPEED := 1.0 ## Knife out: full base speed (guns slow you, see WeaponData.move_mult_for).
+const WALK_MULT := 0.5 ## Holding walk (Shift): half speed and below RUN_FRAC, so no footsteps.
 const KNIFE_REWARD := 1500
 const SLASH_TIME := 0.24
 
@@ -84,6 +85,12 @@ var _stride_timer: float = 0.0
 var _empty_click_cd: float = 0.0
 var _hit_dirs: Array[Dictionary] = [] ## {dir, t}: where recent damage came from (user only).
 var _aim_len: float = 0.0 ## User only: distance along the aim to the first wall.
+var human: bool = false ## Driven by mouse and keyboard (PlayerController).
+var aim_reach: float = 400.0 ## Human: how far out the cursor is (close cursors swing wildly).
+var flinch: float = 0.0 ## Human: aim punch from getting shot (extra spread, degrees).
+var _swing: float = 0.0 ## Human: recent crosshair swing speed (deg/s, decays by flick).
+var _still_t: float = 0.0 ## Human: how long the crosshair has been held on an angle.
+var _last_aim: Vector2 = Vector2.RIGHT
 const AIM_LINE_MAX := 1600.0
 
 
@@ -219,7 +226,7 @@ func is_drawing() -> bool:
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS # Gun sprites are downscaled renders.
 	collision_layer = 2
-	collision_mask = 3
+	collision_mask = 3 | Arena.WINDOW_LAYER # Walls, units and window glass.
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	var shape := CircleShape2D.new()
 	shape.radius = RADIUS
@@ -246,6 +253,8 @@ func _physics_process(delta: float) -> void:
 		return
 	fire_cooldown = maxf(0.0, fire_cooldown - delta)
 	since_shot += delta
+	if human:
+		_update_hands(delta)
 	_update_scope(delta)
 	if since_shot > 1.3 / weapon.fire_rate:
 		bloom = move_toward(bloom, 0.0, weapon.recoil_recovery * delta)
@@ -307,9 +316,37 @@ func _update_scope(delta: float) -> void:
 	if auto_scope:
 		wants_scope = velocity.length() < data.move_speed() * 0.3 and action == Action.NONE
 	if wants_scope and not reloading:
-		scope_t = minf(1.0, scope_t + delta / SCOPE_IN_TIME)
+		var t_in := SCOPE_IN_TIME * (data.user_scope_mult() if human and not Game.ab_flag("old_skills") else 1.0)
+		scope_t = minf(1.0, scope_t + delta / t_in)
 	else:
 		scope_t = maxf(0.0, scope_t - delta / 0.12)
+
+
+## Your skills in your hands: flick (swing wobble), preaim (steady on an
+## angle) and reaction (aim punch wears off).
+func _update_hands(delta: float) -> void:
+	if match_node == null or not match_node.can_fight():
+		# Freeze time / between rounds: your aim gets reset, that's not a flick.
+		_swing = 0.0
+		_still_t = 0.0
+		flinch = 0.0
+		_last_aim = aim_dir
+		return
+	var deg := rad_to_deg(absf(_last_aim.angle_to(aim_dir))) / maxf(delta, 0.001)
+	deg *= clampf(aim_reach / 220.0, 0.15, 1.0) # Cursor right on top of you: a twitch isn't a flick.
+	_last_aim = aim_dir
+	_swing = maxf(deg, _swing * exp(-data.user_swing_recover() * delta))
+	_still_t = _still_t + delta if _swing < 45.0 else 0.0
+	flinch *= exp(-data.user_flinch_recover() * delta)
+
+
+func _hands_spread(base: float) -> float:
+	if not human or Game.ab_flag("old_skills"):
+		return base
+	var steady := clampf((_still_t - 0.1) / 0.3, 0.0, 1.0)
+	var s := base * lerpf(1.0, data.user_steady_mult(), steady)
+	s += data.user_swing_spread() * clampf((_swing - 90.0) / 600.0, 0.0, 1.0)
+	return s + flinch
 
 
 func is_scoped() -> bool:
@@ -328,7 +365,7 @@ func movement_penalty_frac() -> float:
 
 ## Total cone width in degrees for the next shot.
 func current_spread() -> float:
-	var spread := data.spread_degrees() * weapon.spread_mult + weapon.base_spread + bloom
+	var spread := _hands_spread(data.spread_degrees() * weapon.spread_mult) + weapon.base_spread + bloom
 	spread += weapon.moving_inaccuracy * movement_penalty_frac() * data.moving_penalty_mult()
 	if weapon.scope:
 		spread += weapon.unscoped_spread * (1.0 - scope_t)
@@ -466,6 +503,8 @@ func take_damage(amount: float, source: Unit, pen: float = 0.0) -> float:
 	var dealt := minf(amount, health)
 	health -= amount
 	_hit_flash = 0.1
+	if human and not Game.ab_flag("old_skills") and dealt > 0.0:
+		flinch = minf(flinch + data.user_flinch_deg() * minf(dealt / 30.0, 1.5), 12.0)
 	if data.is_user and source != null and is_instance_valid(source):
 		_hit_dirs.append({"dir": (source.global_position - global_position).normalized(), "t": 1.5})
 	damaged.emit(source, dealt)

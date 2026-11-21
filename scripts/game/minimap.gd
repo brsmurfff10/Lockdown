@@ -49,16 +49,31 @@ func _update_calls() -> void:
 			continue
 		var s: Dictionary = known[e]
 		var t := float(s.time)
-		if now - t > SHOW_FOR or s.get("cleared", false):
+		if now - t > _show_for() or s.get("cleared", false):
 			continue
 		var c: Dictionary = _calls.get(e, {})
-		if c.is_empty() or (t > float(c.t) and now - float(c.t) >= CALL_EVERY):
+		if c.is_empty() or (t > float(c.t) and now - float(c.t) >= _call_every()):
 			_calls[e] = {"pos": s.pos, "t": t, "kind": String(s.get("kind", "seen")), "dead": not e.alive}
 	for e in _calls.keys():
-		if not is_instance_valid(e) or now - float(_calls[e].t) > SHOW_FOR:
+		if not is_instance_valid(e) or now - float(_calls[e].t) > _show_for():
 			_calls.erase(e)
 	if m.round_clock < 0.5:
 		_calls.clear()
+
+
+## Decision: how long you keep your team's calls in your head, and how often you take in a new one.
+func _show_for() -> float:
+	var me: Unit = match_node.user_unit
+	if me == null or Game.ab_flag("old_skills"):
+		return SHOW_FOR
+	return me.data.user_call_time()
+
+
+func _call_every() -> float:
+	var me: Unit = match_node.user_unit
+	if me == null or Game.ab_flag("old_skills"):
+		return CALL_EVERY
+	return me.data.user_call_every()
 
 
 func _to_map(p: Vector2) -> Vector2:
@@ -85,7 +100,7 @@ func _draw() -> void:
 	var me: Unit = m.user_unit
 	var now: float = m.round_clock
 	# The bomb, when your side would know where it is.
-	if m.bomb_state == m.Bomb.PLANTED or (me.side == 0 and m.bomb_state == m.Bomb.DROPPED):
+	if m.bomb_state == m.Bomb.PLANTED or (me != null and me.side == 0 and m.bomb_state == m.Bomb.DROPPED):
 		var bp: Vector2 = _to_map(m.bomb_pos)
 		var blink := 0.5 + 0.5 * sin(now * 8.0)
 		draw_rect(Rect2(bp - Vector2(3, 3), Vector2(6, 6)), Color(1, 0.25, 0.2, 0.6 + 0.4 * blink))
@@ -93,7 +108,7 @@ func _draw() -> void:
 	for e in _calls:
 		var c: Dictionary = _calls[e]
 		var p := _to_map(c.pos)
-		var a := clampf(1.0 - (now - float(c.t)) / SHOW_FOR, 0.0, 1.0)
+		var a := clampf(1.0 - (now - float(c.t)) / _show_for(), 0.0, 1.0)
 		var col := Color(1.0, 0.3, 0.25, a)
 		if c.dead:
 			draw_line(p + Vector2(-3, -3), p + Vector2(3, 3), col, 1.5)
@@ -105,7 +120,7 @@ func _draw() -> void:
 			draw_arc(p, 4.6, 0.0, TAU, 12, Color(0, 0, 0, a * 0.6), 1.0)
 	# Teammates and you.
 	for u: Unit in m.units:
-		if u.side != me.side:
+		if me == null or u.side != me.side:
 			continue
 		var p := _to_map(u.global_position)
 		var col: Color = Unit.SIDE_COLORS[u.side]

@@ -100,6 +100,10 @@ func throw(u: Unit, kind: String, target: Vector2) -> bool:
 	if u.grenades[kind] <= 0:
 		u.grenades.erase(kind)
 	var to := target - u.global_position
+	if u.human and not Game.ab_flag("old_skills"):
+		# Utility: your throw lands off by up to this much, more on long throws.
+		var miss := u.data.user_throw_scatter() * clampf(to.length() / MAX_THROW, 0.25, 1.0)
+		to += Vector2.from_angle(randf() * TAU) * miss * sqrt(randf())
 	var dir := to.normalized() if to.length() > 1.0 else u.aim_dir
 	var dist := clampf(to.length(), 40.0, MAX_THROW)
 	var fuse: float = FUSE[kind]
@@ -310,7 +314,7 @@ func _physics_process(delta: float) -> void:
 	for g in projectiles.duplicate():
 		var step: Vector2 = g.vel * delta
 		if step.length() > 0.5:
-			var q := PhysicsRayQueryParameters2D.create(g.pos, g.pos + step, WALL_MASK)
+			var q := PhysicsRayQueryParameters2D.create(g.pos, g.pos + step, WALL_MASK) # Open windows: grenades fly through.
 			var hit := space.intersect_ray(q)
 			if hit.is_empty():
 				g.pos += step

@@ -499,7 +499,7 @@ func prepare_watch_match(w: World, a: int, b: int, back_scene: String) -> bool:
 	w.roll_match_day(w.teams[b])
 	var m: String = _default_map()
 	pending_match = {"mode": "watch", "teams": [w.teams[a], w.teams[b]], "map": m if m != "" else String(mt.get("map", ""))}
-	BotController.mistake_mult = 1.0
+	BotController.mistake_mult = 0.85
 	return true
 
 
@@ -602,7 +602,7 @@ func prepare_quick_match(map_name: String = "") -> void:
 	a.roster.append(you)
 	a.sort_roster()
 	pending_match = {"mode": "quick", "teams": [a, b], "map": map_name if map_name != "" else _default_map()}
-	BotController.mistake_mult = 1.0
+	BotController.mistake_mult = 0.85
 
 
 ## Bot-vs-bot match you can watch (no user player).
@@ -611,7 +611,7 @@ func prepare_spectate_match() -> void:
 	var a: TeamData = league[0]
 	var b: TeamData = league[1 + rng.randi() % (league.size() - 1)]
 	pending_match = {"mode": "spectate", "teams": [a, b], "map": ""}
-	BotController.mistake_mult = 1.0
+	BotController.mistake_mult = 0.85
 
 
 func _generate_league() -> Array[TeamData]:

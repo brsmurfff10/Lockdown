@@ -182,8 +182,27 @@ static func by_id(weapon_id: int) -> WeaponData:
 			w.weapon_name = d[k]
 		else:
 			w.set(k, d[k])
+	w.move_mult = move_mult_for(w.cat, w.scope)
 	w.ammo = w.mag_size
 	return w
+
+
+## Holding a gun slows you down by type: pistol -10%, SMG -15%, rifle -20%,
+## sniper -30% (scoped rifles count as snipers). Shotguns move like SMGs,
+## the LMG between a rifle and a sniper. The knife is full speed.
+static func move_mult_for(category: int, scoped: bool) -> float:
+	if scoped or category == SNIPER:
+		return 0.7
+	match category:
+		PISTOL:
+			return 0.9
+		SMG, SHOTGUN:
+			return 0.85
+		RIFLE:
+			return 0.8
+		HEAVY:
+			return 0.75
+	return 1.0
 
 
 static func price_of(weapon_id: int) -> int:

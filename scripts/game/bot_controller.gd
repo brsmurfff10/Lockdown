@@ -119,6 +119,12 @@ var _jitter := 0.0
 var _jitter_target := 0.0
 var _jitter_timer := 0.0
 var pers: BotPersonality ## Stable habits (aggression, patience, peek style).
+## Target slipped out of sight a moment ago: keep the same fight going this long
+## (aim at where they were, no shooting) before replanning. Stops the
+## lose / replan / re-react loop when someone strafes on a corner edge.
+const LOST_GRACE := 0.35
+var _hidden := false
+var _hidden_t := 0.0
 var _spotted_at := -100.0 ## Last time an enemy had eyes on us (they know this angle).
 var _quiet := false ## Walking (silent) this frame.
 var _plan_wait := 0.0 ## Generic per-stage timer for multi-step plans.
@@ -126,18 +132,38 @@ var _plan_wait := 0.0 ## Generic per-stage timer for multi-step plans.
 ## Difficulty knob: scales every deliberate mistake and how much stress bots
 ## feel. 1.0 = normal, 0 = machine-like, 2 = very human. Set from career difficulty.
 static var mistake_mult := 1.0
+## Every difficulty: bots react this much faster and flick this much closer
+## than their raw stats (0.19.0 bump; --ab=old_bots for the previous values).
+const SHARP_REACT := 0.9
+const SHARP_FLICK := 0.85
 ## Dev stats (behaviour metrics).
 static var stats := {"aim_belief": 0, "aim_true": 0, "prefires": 0, "ghost_clears": 0, "whiffs": 0,
 	"panic_sprays": 0, "overpeeks": 0, "flash_waits": 0, "dry_peeks": 0, "bad_reloads": 0, "refrags": 0,
 	"bomb_blind": 0, "heard_reacts": 0, "fake_defuses": 0, "holds": 0, "hold_moves": 0, "hold_kills": 0,
-	"hold_deaths": 0, "hold_cover_reloads": 0, "hold_extends": 0, "flash_dodges": 0, "pistol_swaps": 0}
+	"hold_deaths": 0, "hold_cover_reloads": 0, "hold_extends": 0, "flash_dodges": 0, "pistol_swaps": 0,
+	"assists": 0, "listens": 0, "feints": 0, "clutch_isolates": 0, "hot_glances": 0, "room_glances": 0}
 
 var stress := 0.0 ## 0 calm .. 1 panicking (public: debug overlay / tests).
+# 0.19 AI (off with --ab=old_ai4).
+var listening := false ## Standing still to listen this frame (Tactics.hear: hears further).
+var _listen_t := 0.0
+var _listen_cd := 3.0
+var _assist_cd := 0.0
+var _feint_t := 0.0 ## Lurker making noise toward the other site (a fake), then walking back.
+var _feint_goal := Vector2.INF
+var _feint_round := -1
 var _stress_spike := 0.0
 var _momentum_until := -100.0 ## Overconfident after a kill until this clock.
 var bomb_blind := false ## Lost track of the bomb timer this round (thinks there's more time).
 var _panic := false ## This fight: spraying instead of controlling.
 var _prefire_left := 0
+var _tv_est := Vector2.ZERO ## How we think the target is moving (lags behind direction changes: ADAD works on us).
+var _move_fire_t := 0.0 ## Strafing between bursts: don't shoot until we've stopped again.
+var _jiggles := 0 ## Jiggle peek: shoulder peeks left in this jiggle.
+var _jiggle_info := false ## Spotted them on a jiggle: grab the info and pull back instead of taking the duel.
+var _prefired_at := -100.0 ## _mem_time we already prefired for (once per sighting).
+var _had_los_mem := true ## Last frame: could we see the last-seen spot? (prefire when the angle opens)
+var _awp_shot_at := -100.0 ## Last AWP shot (re-peeking the same angle after it is a mistake).
 var _glance_pt := Vector2.INF
 var _glance_t := 0.0
 var _glanced := {} ## Vector2 -> clock last glanced (corner clearing order).
@@ -183,17 +209,26 @@ func _physics_process(delta: float) -> void:
 	_update_stress(delta)
 
 	var seen := _find_target()
+	_hidden = false
+	if seen != null:
+		_hidden_t = 0.0
+	elif _target != null and is_instance_valid(_target) and _target.alive and not unit.is_blind() \
+			and _hidden_t + delta < LOST_GRACE and not Game.ab_flag("no_grace"):
+		_hidden_t += delta
+		_hidden = true
+		seen = _target
 	if seen != _target:
 		_fight_from_hold = seen != null and (_clock - _hold_t < 0.3 or (_target != null and _fight_from_hold))
 		if seen != null:
 			_acquire(seen)
 		elif _target != null and is_instance_valid(_target) and _target.alive:
 			# Last seen here: we aim at this spot and have to find them again.
-			_remember(_target.global_position, _target.health, 1.0, _target)
+			_remember(_mem_pos if _hidden_t > 0.0 else _target.global_position, _target.health, 1.0, _target)
+			_hidden_t = 0.0
 			_spotted_at = _clock
 			_decide()
 		_target = seen
-	if _target != null:
+	if _target != null and not _hidden:
 		_mem_pos = _target.global_position
 		_mem_hp = _target.health
 		_mem_time = _clock
@@ -225,11 +260,20 @@ func _physics_process(delta: float) -> void:
 			return
 
 	if unit.match_node.tactics.is_escaping(unit):
-		# Bomb about to blow: run, don't stop to fight.
+		# Bomb about to blow: run. Someone in sight still gets shot: on the way
+		# out while still in the blast (keep running), and as a normal fight once
+		# clear of it (two players hiding in the same corner don't ignore each other).
 		plan = ""
 		_follow_order(delta)
 		if _target != null:
-			_aim_at(_target.global_position, 1.0, delta)
+			if Game.ab_flag("old_escape"):
+				_aim_at(_target.global_position, 1.0, delta)
+			else:
+				var mv := unit.move_input
+				_combat(delta)
+				var m = unit.match_node
+				if unit.global_position.distance_to(m.bomb_pos) < m.BOMB_RADIUS + 120.0:
+					unit.move_input = mv
 	elif _target != null:
 		_combat(delta)
 	elif _evade_timer > 0.0:
@@ -244,7 +288,8 @@ func _physics_process(delta: float) -> void:
 	if _flash_dodge_t > 0.0:
 		# Turn away until it pops (overrides whatever we were looking at).
 		_turn_toward((unit.global_position - _flash_from).normalized(), delta, 1.6)
-	_quiet = _want_quiet()
+	_ai4_tick(delta)
+	_quiet = _want_quiet() and _feint_t <= 0.0
 	_finalize_move(delta)
 
 
@@ -263,6 +308,18 @@ func _finalize_move(delta: float) -> void:
 				push += d / l * (34.0 - l) / 34.0
 		if push != Vector2.ZERO:
 			mv = (mv + push * 0.9).limit_length(1.0)
+		# Executes: don't walk in stacked on the player in front (one spray kills both).
+		if not Game.ab_flag("old_ai3") and unit.side == Tactics.T and _target == null and plan == "" \
+				and unit.match_node.tactics.t_phase == "execute":
+			for u: Unit in unit.match_node.units:
+				if u == unit or not u.alive or u.side != unit.side:
+					continue
+				var rel2 := u.global_position - unit.global_position
+				var l2 := rel2.length()
+				if l2 < 120.0 and l2 > 0.1 and rel2.dot(mv.normalized()) / l2 > 0.6 and u.velocity.length() > 20.0 \
+						and u.velocity.normalized().dot(mv.normalized()) > 0.4:
+					mv *= lerpf(0.25, 0.7, l2 / 120.0)
+					break
 		# Someone right in front going the same way: let them through first
 		# (lower instance id has priority, so two bots never wait on each other).
 		if _yield_t < 1.2:
@@ -359,9 +416,15 @@ func _acquire(enemy: Unit) -> void:
 		spot *= 0.88 # Holding nearby, just not exactly on it.
 	elif unit.aim_dir.dot(desired) < unit.data.fov_dot():
 		spot *= 1.8 # Only caught it in peripheral vision.
+	# They came back out where we last saw them, crosshair already there: we were waiting for it.
+	var on_last_seen := _mem_pos != Vector2.INF and _mem_age() < 4.0 and enemy.global_position.distance_to(_mem_pos) < 110.0
+	if pre_aimed and on_last_seen and not Game.ab_flag("old_ai2"):
+		spot *= 0.6
 	if fresh and not expected and not anticipating and not Game.ab_flag("no_surprise"):
-		spot += randf_range(0.14, 0.3) # Surprise: nobody told us they were here.
+		spot += randf_range(0.1, 0.22) if not Game.ab_flag("old_ai2") else randf_range(0.14, 0.3) # Surprise: nobody told us they were here.
 	_reaction_left = spot * (1.0 if fresh else 0.5)
+	if not Game.ab_flag("old_bots"):
+		_reaction_left *= SHARP_REACT
 	_perceive_left = _reaction_left * 0.6 # Brain first, then hand.
 	_burst = 0
 	_burst_len = _pick_burst()
@@ -376,12 +439,21 @@ func _acquire(enemy: Unit) -> void:
 		flick *= 0.5 if expected else 0.75
 	if not fresh:
 		flick *= 0.6
+	if not Game.ab_flag("old_bots"):
+		flick *= SHARP_FLICK
 	flick *= 1.0 + stress * 0.9
 	if randf() < _mistake_p(0.06):
 		flick *= 3.0 # Whiffed the flick.
 		stats.whiffs += 1
 	_aim_err = flick * (1.0 if randf() < 0.5 else -1.0)
 	_reaction_left *= 1.0 + stress * 0.2
+	if fresh:
+		_tv_est = Vector2.ZERO # Don't know how they're moving yet.
+	_move_fire_t = 0.0
+	# Jiggle peek found them: got the info, pull straight back (unless it's a gift).
+	_jiggle_info = plan == "jiggle" and not Game.ab_flag("old_ai2") and (_mem_is_awp() or _advantage() < 0.3 or enemy.weapon.cat == WeaponData.SNIPER)
+	if _jiggle_info:
+		_duck_timer = randf_range(0.12, 0.25)
 	_panic = stress > 0.45 and randf() < (stress - 0.35) * mistake_mult
 	if _panic:
 		stats.panic_sprays += 1
@@ -554,6 +626,14 @@ func _score_options() -> Dictionary:
 	if m.tactics.is_saving(unit):
 		s["hold"] += 2.0
 		s["reposition"] += 1.0
+		if not Game.ab_flag("old_save"):
+			# One and done: take the fight that walks into the corner, never go looking for one.
+			s["reposition"] -= 1.0
+			s["swing"] -= 2.5
+			s["push"] -= 3.0
+			s["flank"] -= 3.0
+			s["jiggle"] -= 1.5
+			s["bait"] -= 1.5
 	# Trade window: a teammate just died to this enemy nearby: swing NOW.
 	if _clock - _trade_at < 2.5 and _mem_pos.distance_to(_trade_pos) < 160.0:
 		s["swing"] += 0.6 + pers.discipline * 0.6
@@ -565,6 +645,21 @@ func _score_options() -> Dictionary:
 		s["push"] -= 0.4
 	if pers.has("jiggler"):
 		s["jiggle"] += 0.4
+	if not Game.ab_flag("old_ai3"):
+		# They're defusing and it'll finish: holding loses the round.
+		if unit.side == Tactics.T and m.tactics.defuse_push:
+			s["hold"] -= 2.5
+			s["reposition"] -= 2.0
+			s["flank"] -= 2.5
+			s["swing"] += 1.2
+			s["push"] += 1.6
+		# AWP: just shot from here (or they've seen us): new angle, don't re-peek the same one.
+		if awp and (_clock - _awp_shot_at < 4.0 or seen_me):
+			s["reposition"] += 1.3
+			s["hold"] -= 0.5
+			s["swing"] -= 0.3
+	if seen_me and not Game.ab_flag("old_ai2"):
+		s["jiggle"] += 0.3 # They're on this angle: make them shoot at a shoulder.
 	# Overconfident after a kill: re-peek the same fight.
 	if _clock < _momentum_until:
 		s["swing"] += 0.8
@@ -584,6 +679,23 @@ func _score_options() -> Dictionary:
 		s["spam"] = 0.35 + pers.aggression * 0.5 + (0.5 if _mem_age() < 1.5 else 0.0) + (0.35 if dist < 500.0 else 0.0) 				- (1.5 if m.tactics.is_saving(unit) else 0.0)
 		s["swing"] -= 0.5 # Peeking into a smoke is pointless.
 		s["jiggle"] -= 0.4
+	if not Game.ab_flag("old_ai4") and not Game.ab_flag("no_clutch"):
+		var alive: Array[int] = m.alive_counts()
+		if alive[unit.side] == 1 and alive[1 - unit.side] >= 2:
+			# Clutch: take them one at a time; never swing into two at once.
+			if m.tactics.known_enemies_near(unit.side, _mem_pos, 550.0) >= 2:
+				s["swing"] -= 1.2
+				s["push"] -= 1.5
+				s["jiggle"] -= 0.3
+				s["reposition"] += 0.8
+				s["flank"] += 0.4
+			if not on_clock:
+				s["hold"] += 0.4 + (0.2 if pers.has("clutch_calm") else 0.0)
+		# Tilted: forces fights to make something happen.
+		var tl: float = m.tactics.tilt_of(unit) * (1.0 - pers.composure)
+		s["swing"] += 0.3 * tl
+		s["push"] += 0.2 * tl
+		s["hold"] -= 0.15 * tl
 	# Habit: takes an early peek most rounds.
 	if pers.has("early_peek") and m.round_clock < 25.0:
 		s["swing"] += 0.5
@@ -655,6 +767,10 @@ func _set_plan(p: String, duration: float) -> void:
 				_set_plan("reposition", 6.0)
 	if plan == "hold" and not Game.ab_flag("old_hold"):
 		_plan_hold()
+	if plan == "jiggle":
+		_jiggles = randi_range(2, 3) + (1 if pers.has("jiggler") or _mem_is_awp() else 0)
+		_plan_wait = 0.0
+	_had_los_mem = _mem_pos != Vector2.INF and unit.match_node.has_line_of_sight(unit.global_position, _mem_pos)
 	if plan == "swing":
 		# Prefire where we expect them (aggressive players, the "prefire" habit).
 		_prefire_left = 0
@@ -670,6 +786,10 @@ func _set_plan(p: String, duration: float) -> void:
 
 
 func _run_plan(delta: float) -> void:
+	if unit.side == Tactics.T and plan in ["hold", "reposition", "flank", "jiggle", "bait"] and unit.match_node.tactics.defuse_push \
+			and not Game.ab_flag("old_ai3"):
+		plan = "" # No time for that: they're defusing.
+		return
 	_plan_timer -= delta
 	# Attackers on the clock can't sit in plans forever: after a while, get
 	# back to the hit and ignore stale noise for a few seconds.
@@ -736,6 +856,33 @@ func _run_plan(delta: float) -> void:
 				unit.start_reload()
 			if _plan_timer <= 0.0 and not unit.reloading:
 				_set_plan("hold", randf_range(1.5, 3.0))
+		"jiggle" when not Game.ab_flag("old_ai2"):
+			# Quick shoulder peeks: out at full speed for a split second, straight
+			# back to cover, a beat, again. Info without giving a real shot.
+			_prefire_tick()
+			match _plan_stage:
+				0:
+					_move_to(_plan_spot, 4.0)
+					_plan_wait += delta
+					if _plan_wait > randf_range(0.12, 0.2) or unit.global_position.distance_to(_plan_spot) < 6.0:
+						_plan_wait = 0.0
+						_plan_stage = 1
+				1:
+					if _move_to(_plan_home, 5.0):
+						_plan_stage = 2
+						_plan_wait = randf_range(0.1, 0.35)
+				_:
+					unit.move_input = Vector2.ZERO
+					_plan_wait -= delta
+					if _plan_wait <= 0.0:
+						_plan_wait = 0.0
+						_jiggles -= 1
+						if _jiggles > 0:
+							_plan_stage = 0
+						else:
+							_mem_conf *= 0.55 # Nobody there on any of the peeks.
+							_mem_time -= 1.0
+							_decide()
 		"jiggle":
 			# Stage 0: step out. Stage 1: step back. Then rethink.
 			if _plan_stage == 0:
@@ -758,6 +905,7 @@ func _run_plan(delta: float) -> void:
 				_no_flash_once = true
 				_set_plan(_pending_plan if _pending_plan != "" else "swing", 2.5)
 		"swing":
+			_prefire_tick()
 			if _plan_stage == 0:
 				if _move_to(_plan_spot, 6.0) or _plan_timer <= 0.0:
 					_plan_stage = 1
@@ -832,6 +980,7 @@ func _run_plan(delta: float) -> void:
 				_mem_conf *= 0.7
 				_decide()
 		"push":
+			_prefire_tick()
 			_walk_path_to(_mem_pos, delta)
 			if unit.global_position.distance_to(_mem_pos) < 40.0 or _plan_timer <= 0.0:
 				_mem_conf = 0.0 # Cleared the spot.
@@ -1213,6 +1362,8 @@ func _want_quiet() -> bool:
 	# On the clock: no time to sneak.
 	if unit.side == Tactics.T and not planted and m.round_time_left < 30.0 * m.arena.tempo:
 		return false
+	if unit.side == Tactics.CT and planted and t.ninja and not Game.ab_flag("old_ai4"):
+		return true # Sneaking the defuse: not a sound.
 	if unit.side == Tactics.CT and planted and bomb_time_seen() < 22.0:
 		return false
 	if plan in ["reposition", "flank", "bait", "jiggle"]:
@@ -1260,6 +1411,31 @@ func _walk_path_to(goal: Vector2, delta: float) -> void:
 		unit.move_input = (goal - unit.global_position).normalized()
 
 
+## Prefire: coming round to where we last saw someone (a few seconds ago),
+## fire into the spot the moment the angle opens instead of waiting to see them.
+func _prefire_tick() -> void:
+	if Game.ab_flag("old_ai2") or _mem_pos == Vector2.INF:
+		return
+	var m = unit.match_node
+	var los: bool = m.has_line_of_sight(unit.global_position, _mem_pos)
+	var opened := los and not _had_los_mem
+	_had_los_mem = los
+	if not opened or _prefired_at == _mem_time or _mem_age() > 3.0 or _mem_conf < 0.5 or unit.weapon.scope:
+		return
+	if unit.aim_dir.dot((_mem_pos - unit.global_position).normalized()) < 0.97:
+		return
+	var p := 0.25 + 0.45 * unit.data.preaim_factor() / 0.85 + (0.3 if pers.has("prefire") else 0.0) + pers.aggression * 0.15
+	_prefired_at = _mem_time
+	if randf() < p:
+		_prefire_left = maxi(_prefire_left, randi_range(2, 3) if unit.weapon.automatic else 1)
+	while _prefire_left > 0 and unit.try_fire():
+		_prefire_left -= 1
+		if _prefire_left == 0:
+			stats.prefires += 1
+		if unit.weapon.automatic:
+			break # One per frame; the rest follow next frames.
+
+
 func _aim_at(p: Vector2, _speed: float, delta: float) -> void:
 	var look := p - unit.global_position
 	if look.length() > 1.0:
@@ -1271,17 +1447,27 @@ func _aim_at(p: Vector2, _speed: float, delta: float) -> void:
 # =============================================================================
 
 func _combat(delta: float) -> void:
-	unit.match_node.report_enemy(unit, _target)
+	if not _hidden:
+		unit.match_node.report_enemy(unit, _target)
 	_manage_weapon_in_fight()
 
-	var to_t := _target.global_position - unit.global_position
+	# Hidden (just slipped out of sight): work off where we last saw them.
+	var tpos := _mem_pos if _hidden else _target.global_position
+	var to_t := tpos - unit.global_position
 	var dist := to_t.length()
 	var desired := to_t / maxf(dist, 0.001)
-	# Aim at the exposed part of them, but where they were a moment ago (tracking lag).
-	var lagged := _target.global_position - _target.velocity * unit.data.tracking_lag()
+	# Aim at the exposed part of them. Tracking: steady movement is followed,
+	# but a change of direction takes a moment to read (so A-D strafing works).
+	var lagged := tpos
+	if Game.ab_flag("old_ai2"):
+		lagged = tpos - (Vector2.ZERO if _hidden else _target.velocity * unit.data.tracking_lag())
+	elif not _hidden:
+		var lag := unit.data.tracking_lag() * 0.6
+		_tv_est = _tv_est.lerp(_target.velocity, clampf(delta / maxf(lag, 0.02), 0.0, 1.0))
+		lagged = tpos - (_target.velocity - _tv_est) * lag
 	var origin := unit.global_position
 	var aim_point := lagged
-	var line: Array = unit.match_node.sight_line(unit, _target)
+	var line: Array = [] if _hidden else unit.match_node.sight_line(unit, _target)
 	if not line.is_empty():
 		origin = line[0]
 		aim_point = lagged + (line[1] - _target.global_position)
@@ -1301,17 +1487,29 @@ func _combat(delta: float) -> void:
 
 	_duck_timer -= delta
 	if unit.reloading or _duck_timer > 0.0:
-		_retreat_from(_target.global_position)
+		_retreat_from(tpos)
 		return
 
 	_reaction_left -= delta
+	_move_fire_t -= delta
 	var on_target := unit.aim_dir.dot(intended) > 0.99
+	if not Game.ab_flag("old_ai2"):
+		# Pull the trigger when the crosshair is on them, not just near (about a body width).
+		var tol := clampf(atan2(Unit.RADIUS * 1.5, maxf(dist, 1.0)), deg_to_rad(1.5), deg_to_rad(6.0))
+		on_target = absf(unit.aim_dir.angle_to(intended)) < tol
 	var ready := _reaction_left <= 0.0 and on_target
 	var heavy := unit.weapon.moving_inaccuracy >= 8.0
-	# Scoped guns: stop and scope in before the shot (no unscoped no-scopes).
-	var stopping := ready and heavy and (_counter_strafe or unit.weapon.scope)
+	# Counter-strafe: stop before the shot. Rifles, pistols and snipers at range;
+	# SMGs and shotguns can run and gun up close.
+	var run_gun := unit.weapon.cat in [WeaponData.SMG, WeaponData.SHOTGUN] and dist < 420.0
+	if not Game.ab_flag("old_ai2") and not heavy and not run_gun and dist > 180.0:
+		heavy = true
+	var stopping := ready and heavy and (_counter_strafe or unit.weapon.scope) and _move_fire_t <= 0.0
 	var scoped_ok := not unit.weapon.scope or unit.scope_t > 0.9
-	if ready and scoped_ok and not (stopping and unit.is_moving()):
+	# Just ducked out of sight mid-burst: finish the burst on the spot (they may still be on the edge).
+	var spot_burst := _hidden and _burst > 0 and _hidden_t < 0.2 and unit.weapon.automatic and not Game.ab_flag("old_ai2")
+	var hold_fire := _move_fire_t > 0.0 and heavy and _counter_strafe
+	if ready and scoped_ok and (not _hidden or spot_burst) and not hold_fire and not (stopping and unit.is_moving()):
 		var reset_bloom := lerpf(9.0, 3.0, unit.data._t("recoil"))
 		if _panic:
 			reset_bloom = 99.0 # Panic: hold the trigger down.
@@ -1320,6 +1518,7 @@ func _combat(delta: float) -> void:
 				_burst += 1
 				if unit.weapon.cat == WeaponData.SNIPER:
 					_duck_timer = randf_range(0.5, 0.9) # Peek, shoot, un-peek.
+					_awp_shot_at = _clock
 				elif _burst >= _burst_len and _target.health > 25.0 and not _panic \
 						and randf() < lerpf(0.2, 0.85, unit.data._t("positioning")) \
 						and _cover_from(_target.global_position) != Vector2.INF:
@@ -1333,6 +1532,8 @@ func _combat(delta: float) -> void:
 					_burst_len = _pick_burst()
 					_strafe = -_strafe if _strafe != 0.0 else (1.0 if randf() < 0.5 else -1.0)
 					_strafe_timer = randf_range(0.25, 0.45)
+					if not Game.ab_flag("old_ai2"):
+						_move_fire_t = randf_range(0.15, 0.3) # Strafe, then stop and shoot again.
 
 	_strafe_timer -= delta
 	if _strafe_timer <= 0.0:
@@ -1341,7 +1542,7 @@ func _combat(delta: float) -> void:
 			_strafe = 0.0
 		else:
 			_strafe = 1.0 if randf() < 0.5 else -1.0
-		_counter_strafe = randf() < lerpf(0.3, 0.95, unit.data._t("movement"))
+		_counter_strafe = randf() < (lerpf(0.3, 0.95, unit.data._t("movement")) if Game.ab_flag("old_ai2") else lerpf(0.55, 1.0, unit.data._t("movement")))
 	var perp := Vector2(-desired.y, desired.x) * _strafe
 	var radial := 0.0
 	var ideal := unit.weapon.ideal_range
@@ -1425,10 +1626,17 @@ func _retreat_from(threat: Vector2) -> void:
 			unit.move_input = (p - unit.global_position).normalized()
 			return
 	var away := (unit.global_position - threat).normalized()
-	unit.move_input = (away + away.orthogonal() * (1.0 if randf() < 0.5 else -1.0)).normalized()
+	# Back off to one side; the side is fixed per bot (a coin flip every frame zig-zagged).
+	unit.move_input = (away + away.orthogonal() * (1.0 if unit.get_instance_id() % 2 == 0 else -1.0)).normalized()
 
 
 func _pick_burst() -> int:
+	if not Game.ab_flag("old_ai2") and _target != null and unit.weapon.cat in [WeaponData.RIFLE, WeaponData.SMG]:
+		var d := unit.global_position.distance_to(_target.global_position)
+		if d > 900.0:
+			return randi_range(1, 2) # Taps at long range.
+		if d > 550.0:
+			return randi_range(2, 4)
 	match unit.weapon.cat:
 		WeaponData.SMG:
 			return randi_range(4, 8)
@@ -1833,6 +2041,7 @@ func _update_stress(delta: float) -> void:
 	if unit.flash_t > 0.3:
 		target += 0.45
 	target += 0.05 * int(m.loss_streak[unit.team_index])
+	target += 0.07 * m.tactics.tilt_of(unit) # Tilted: dying every round gets to you.
 	target += _stress_spike
 	_stress_spike = maxf(0.0, _stress_spike - delta * 0.2)
 	var resist := 0.4 * pers.composure + 0.35 * unit.data._t("decision") + 0.25 * clampf(unit.data.morale / 100.0, 0.0, 1.0)
@@ -1850,7 +2059,8 @@ func on_heard(pos: Vector2, kind: String) -> void:
 	var d := unit.global_position.distance_to(pos)
 	if d < INTEL_REACT_RADIUS and _hold_update(pos, 0.8 if kind in ["defuse", "plant"] else 0.55):
 		return # Same way in as the angle we're holding: stay on it.
-	if d < INTEL_REACT_RADIUS and plan in ["", "hold", "reposition"] and not unit.match_node.tactics.is_saving(unit) \
+	# Saving: only noises close by (someone walking into our hiding spot) matter.
+	if d < INTEL_REACT_RADIUS and plan in ["", "hold", "reposition"] and (not unit.match_node.tactics.is_saving(unit) or d < 350.0) \
 			and (_mem_age() > 2.0 or _mem_pos.distance_to(pos) > 120.0):
 		_remember(pos, 100.0, 0.8 if kind in ["defuse", "plant"] else 0.55, null)
 		stats.heard_reacts += 1
@@ -1890,7 +2100,8 @@ func on_partner_died(killer_pos: Vector2) -> void:
 	if not unit.alive or _target != null or unit.match_node.tactics.is_saving(unit):
 		return
 	var guess := killer_pos + _rand_circle(40.0)
-	if unit.global_position.distance_to(guess) > 900.0 or unit.health < 30.0:
+	var reach := 900.0 if Game.ab_flag("old_ai4") else 1100.0
+	if unit.global_position.distance_to(guess) > reach or unit.health < (30.0 if Game.ab_flag("old_ai4") else 20.0):
 		return
 	_trade_at = _clock
 	_trade_pos = guess
@@ -1904,6 +2115,8 @@ func on_partner_died(killer_pos: Vector2) -> void:
 func on_got_kill() -> void:
 	if _fight_from_hold:
 		stats.hold_kills += 1
+	if unit.weapon.cat == WeaponData.SNIPER and not unit.match_node.enemies_of(unit.side).is_empty():
+		unit.match_node.tactics.awp_relocate(unit)
 	var p := (pers.aggression - 0.4) + (0.5 if pers.has("hothead") else 0.0)
 	if p > 0.0 and randf() < _mistake_p(0.6) * p:
 		_momentum_until = _clock + 4.0
@@ -1935,6 +2148,8 @@ func _mem_is_awp() -> bool:
 func _try_peek_flash() -> bool:
 	var m = unit.match_node
 	var t: Tactics = m.tactics
+	if m.enemies_of(unit.side).is_empty():
+		return false
 	if _late_t() or randf() < _mistake_p(0.25):
 		stats.dry_peeks += 1
 		return false
@@ -2020,6 +2235,102 @@ func _edge_aim(from: Vector2, look_pt: Vector2) -> Vector2:
 	return _edge_pt
 
 
+## 0.19 AI, every frame with no one in sight: help a teammate's fight
+## (crossfire / refrag), stop to listen near a contact, the lurker's noise feint.
+func _ai4_tick(delta: float) -> void:
+	listening = false
+	if Game.ab_flag("old_ai4") or _target != null or unit.action != Unit.Action.NONE:
+		_listen_t = 0.0
+		return
+	var m = unit.match_node
+	var t: Tactics = m.tactics
+	if t.is_escaping(unit) or t.is_saving(unit) or t.hunting:
+		_feint_t = 0.0
+		return
+	# A teammate is in a fight next to us: swing it with them (crossfire / instant trade).
+	_assist_cd -= delta
+	if plan in ["", "hold"] and _assist_cd <= 0.0 and unit.health > 30.0 and not Game.ab_flag("no_assist"):
+		_assist_cd = 0.35
+		var fight := _mate_fight()
+		if fight != Vector2.INF and randf() < 0.45 + 0.45 * pers.discipline:
+			_assist_cd = 3.0
+			_listen_t = 0.0
+			_feint_t = 0.0
+			_remember(fight, 100.0, 0.8, null)
+			stats.assists += 1
+			_no_flash_once = true
+			_set_plan("swing", 2.2)
+			return
+	# The lurker's fake: run (loud) toward the other site for a moment, then walk back.
+	if _feint_t > 0.0:
+		_feint_t -= delta
+		if _feint_goal != Vector2.INF:
+			_walk_path_to(_feint_goal, delta)
+		return
+	if unit.side == Tactics.T and t.t_route.get(unit, "") == "lurk" and t.t_phase == "approach" and plan == "" \
+			and _feint_round != m.round_num and m.round_clock > 6.0 * m.arena.tempo and not Game.ab_flag("no_feint"):
+		_feint_round = m.round_num
+		if randf() < 0.35 + 0.4 * pers.discipline:
+			var other := "B" if t.t_site == "A" else "A"
+			var path: PackedVector2Array = m.arena.find_path(unit.global_position, m.arena.site_center(other))
+			if path.size() > 3:
+				_feint_goal = path[mini(path.size() - 1, 8)]
+				_feint_t = randf_range(1.0, 1.6)
+				stats.feints += 1
+				t.thought[unit] = "faking %s: making noise" % other
+				return
+	# Close to a contact and sneaking: stop for a second and listen.
+	_listen_cd -= delta
+	if _listen_t > 0.0:
+		_listen_t -= delta
+		listening = true
+		unit.move_input = Vector2.ZERO
+		return
+	if plan == "" and _quiet and _listen_cd <= 0.0 and not Game.ab_flag("no_listen") and t.intel_near(unit.side, unit.global_position, 700.0) != Vector2.INF:
+		_listen_cd = randf_range(5.0, 9.0) * (1.5 - pers.patience)
+		if randf() < 0.3 + pers.patience * 0.45:
+			_listen_t = randf_range(0.6, 1.1)
+			stats.listens += 1
+
+
+## A teammate within reach is fighting someone we can't see: where that enemy is.
+func _mate_fight() -> Vector2:
+	var m = unit.match_node
+	var holding_site: bool = unit.side == Tactics.CT and m.tactics.ct_state.get(unit, "") == "hold"
+	var reach := 450.0 if holding_site else 650.0
+	for u: Unit in m.units:
+		if u == unit or not u.alive or u.side != unit.side:
+			continue
+		if u.global_position.distance_to(unit.global_position) > reach:
+			continue
+		var enemy: Unit = null
+		for c in u.get_children():
+			if c is BotController:
+				var bc := c as BotController
+				if bc._target != null and is_instance_valid(bc._target) and bc._target.alive and not bc._hidden:
+					enemy = bc._target
+		if enemy == null and u.data.is_user and not Game.autoplay:
+			# You: the enemy you're looking at (your team sees your fight).
+			for e: Unit in m.enemies_of(unit.side):
+				if m.sees(u, e) and e.global_position.distance_to(u.global_position) < 900.0:
+					enemy = e
+					break
+		if enemy == null:
+			continue
+		var ep := enemy.global_position
+		if ep.distance_to(unit.global_position) > 1000.0 or m.has_wall_los(unit.global_position, ep):
+			continue # Too far, or we'd already see them ourselves.
+		# Attackers on their way in stay on the plan unless it's right next to them.
+		if unit.side == Tactics.T and m.bomb_state != m.Bomb.PLANTED and m.tactics.t_phase == "approach" 				and u.global_position.distance_to(unit.global_position) > 350.0:
+			continue
+		# Only a fight we can join with a quick peek (a step or two), not a walk around the block.
+		var pk := _find_peek_point(ep, 4)
+		if pk == Vector2.INF or pk.distance_to(unit.global_position) > 150.0:
+			continue
+		return ep
+	return Vector2.INF
+
+
 ## Walking: glance at the corners and doorways along the way, nearest-to-
 ## the-crosshair first (a natural sweep), then back to where we're going.
 func _corner_glance(delta: float, move: Vector2) -> Vector2:
@@ -2034,8 +2345,21 @@ func _corner_glance(delta: float, move: Vector2) -> Vector2:
 	var a: Arena = m.arena
 	var best := Vector2.INF
 	var best_turn := INF
+	var cands: Array[Vector2] = []
 	for k: String in a.points:
-		var p := a.pt(k)
+		cands.append(a.pt(k))
+	var hot_n := 0
+	var room_n := 0
+	if not Game.ab_flag("old_ai4"):
+		# Where they keep killing us from first, then doorways and room corners.
+		for hp: Vector2 in m.tactics.hot_angles(unit.side):
+			cands.push_front(hp)
+			hot_n += 1
+		for gp: Vector2 in a.glance_spots:
+			cands.append(gp)
+			room_n += 1
+	for ci in cands.size():
+		var p: Vector2 = cands[ci]
 		var to := p - unit.global_position
 		var d := to.length()
 		if d < 120.0 or d > 600.0:
@@ -2046,9 +2370,15 @@ func _corner_glance(delta: float, move: Vector2) -> Vector2:
 		if _clock - float(_glanced.get(p, -100.0)) < 6.0:
 			continue
 		var turn := absf(unit.aim_dir.angle_to(to))
+		if ci < hot_n:
+			turn -= 1.2 # Their favourite angle: check it first.
 		if turn < best_turn and m.has_line_of_sight(unit.global_position, p):
 			best_turn = turn
 			best = p
+			if ci < hot_n:
+				stats.hot_glances += 1
+			elif ci >= cands.size() - room_n:
+				stats.room_glances += 1
 	if best != Vector2.INF:
 		_glanced[best] = _clock
 		_glance_pt = best

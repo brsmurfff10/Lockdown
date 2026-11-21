@@ -102,7 +102,7 @@ const TRAINING_INTENSITY := {
 ## My Player training.
 const PM_INTENSITY := {
 	"Light": {"mult": 0.5, "sd": 0.25, "injury": 0.0, "desc": "Small, safe gains and a morale lift."},
-	"Normal": {"mult": 1.0, "sd": 0.55, "injury": 0.01, "desc": "The usual. A bad session can set you back."},
+	"Normal": {"mult": 1.0, "sd": 0.4, "injury": 0.01, "desc": "The usual. A bad session can set you back."},
 	"Hard": {"mult": 1.7, "sd": 0.7, "injury": 0.07, "desc": "Big gains, bigger swings, 7% injury risk."},
 }
 const SPECIALTIES := {
@@ -196,10 +196,10 @@ var legacy: Dictionary = {}
 # --- Batch 9: difficulty, club operations, My Player extras, history ---------
 const DIFFICULTIES := {
 	"Casual": {"desc": "Fewer injuries, richer sponsors, a patient board, rivals less aggressive, players happier to join, sloppier bots.",
-		"injury": 0.5, "income": 1.25, "ai": 0.7, "board": 1.6, "edge": 2.0, "refuse": 0.5, "bots": 1.5},
-	"Normal": {"desc": "The intended balance.", "injury": 1.0, "income": 1.0, "ai": 1.0, "board": 1.0, "edge": 0.0, "refuse": 1.0, "bots": 1.0},
+		"injury": 0.5, "income": 1.25, "ai": 0.7, "board": 1.6, "edge": 2.0, "refuse": 0.5, "bots": 1.3},
+	"Normal": {"desc": "The intended balance.", "injury": 1.0, "income": 1.0, "ai": 1.0, "board": 1.0, "edge": 0.0, "refuse": 1.0, "bots": 0.85},
 	"Hardcore": {"desc": "More injuries, tighter money, a ruthless board, predatory rivals, choosier players, sharper bots, tougher matches.",
-		"injury": 1.5, "income": 0.8, "ai": 1.4, "board": 0.6, "edge": -1.5, "refuse": 1.6, "bots": 0.6},
+		"injury": 1.5, "income": 0.8, "ai": 1.4, "board": 0.6, "edge": -1.5, "refuse": 1.6, "bots": 0.5},
 }
 const STAFF_ROLES := {
 	"Head Coach": {"base": 900, "desc": "Training +8% per star; academy prospects grow faster."},
@@ -327,6 +327,7 @@ func new_world(p_mode: String = "manager", pack: String = "") -> void:
 	set_difficulty(difficulty)
 	_make_schedules()
 	_make_calendar()
+	_seed_titles()
 
 
 func _team_names(count: int) -> Array:
@@ -1091,6 +1092,7 @@ func _start_cup(t: Dictionary) -> void:
 
 func _start_playoffs() -> void:
 	for l in LEAGUES.size():
+		_table_titles(l, standings(l), season)
 		var b := _new_bracket("%s Playoffs S%d" % [LEAGUES[l].name, season], "playoff", "Open", PLAYOFF_START, PLAYOFF_SIZE, l)
 		var field: Array = []
 		for tm in standings(l).slice(0, PLAYOFF_SIZE):
@@ -1180,7 +1182,11 @@ func _finish_bracket(t: Dictionary) -> void:
 			var trank := (90 - int(t.league) * 15) if t.kind != "cup" else clampi(int(45.0 + 15.0 * float(tier_info(t).mult)), 45, 88)
 			_honour_team(team, "%s Champion" % _plain_event(String(t.name)), trank)
 		elif place == 2:
-			_honour_team(team, "%s Finalist" % _plain_event(String(t.name)), 12)
+			_honour_team(team, "%s Finalist" % _plain_event(String(t.name)), 25)
+		elif place == 3:
+			_honour_team(team, "%s Semi Finalist" % _plain_event(String(t.name)), 20)
+		elif place == 5:
+			_honour_team(team, "%s Quarter Finalist" % _plain_event(String(t.name)), 10)
 		if idx == ui and mode == "manager":
 			if prize > 0:
 				_earn(prize, "Prize: %s (%s)" % [t.name, _place_name(place)])
@@ -2379,8 +2385,17 @@ func train_user(key: String, intensity: String = "Normal") -> float:
 		coach_booked = false
 	if assets.has("trainer"):
 		mult *= 1.15
+	var before := user_player.stat(key)
 	var d := Progression.train(user_player, key, rng, mult, sd)
+	# A session always moves the stat visibly (no "+0.0"), unless it's maxed out.
+	if absf(d) < 0.1:
+		user_player.set_stat(key, before + (0.1 if d >= 0.0 else -0.1))
+		d = user_player.stat(key) - before
 	var note := ""
+	if before >= PlayerData.MAX_STAT - 0.05:
+		note = "Already maxed out."
+	elif user_player.potential - user_player.rating_exact() < 1.5:
+		note = "Close to your potential: gains are small now."
 	if intensity == "Light":
 		user_player.morale = minf(100.0, user_player.morale + 3.0)
 	if rng.randf() < float(it.injury) * (0.5 if perks.has("iron") else 1.0):
@@ -2915,10 +2930,79 @@ static func _plain_event(n: String) -> String:
 	return rx.sub(n, "").strip_edges()
 
 
+const ORDINALS := ["#1", "#2", "#3", "#4", "#5"]
+
+
+## League table titles: the top 5 teams after the regular season, whole roster.
+func _table_titles(l: int, table: Array, s: int) -> void:
+	for i in mini(5, table.size()):
+		_honour_team(table[i], "%s in the %s" % [ORDINALS[i], LEAGUES[l].name], s, 60 - l * 12 - i * 6)
+
+
+## Player leaderboard titles for one league's qualified players (already sorted
+## by season rating): top 5 rated, plus the season's best K/D and most kills.
+func _leader_titles(pool: Array, l: int, s: int) -> void:
+	var lname: String = LEAGUES[l].name
+	for i in mini(5, pool.size()):
+		(pool[i] as PlayerData).add_honour("#%d Rated in the %s" % [i + 1, lname], s, 70 - l * 12 - i * 6)
+	var kd: PlayerData = pool[0]
+	var kills: PlayerData = pool[0]
+	for p: PlayerData in pool:
+		if p.season_kd() > kd.season_kd():
+			kd = p
+		if int(p.season_stats.get("k", 0)) > int(kills.season_stats.get("k", 0)):
+			kills = p
+	kd.add_honour("Top K/D in the %s" % lname, s, 55 - l * 10)
+	kills.add_honour("Most Kills in the %s" % lname, s, 50 - l * 10)
+
+
+## New world: last season's honours (Season 0) so the scene already has
+## title holders. Results follow team and player strength, with some luck.
+func _seed_titles() -> void:
+	for l in LEAGUES.size():
+		var lt := league_teams(l)
+		if lt.is_empty():
+			continue
+		var luck := {}
+		for t: TeamData in lt:
+			luck[t] = t.rating() + rng.randfn(0.0, 2.5)
+		lt.sort_custom(func(a: TeamData, b: TeamData) -> bool: return float(luck[a]) > float(luck[b]))
+		_table_titles(l, lt, 0)
+		var top := lt.slice(0, mini(PLAYOFF_SIZE, lt.size()))
+		for t: TeamData in top:
+			luck[t] = float(luck[t]) + rng.randfn(0.0, 2.0)
+		top.sort_custom(func(a: TeamData, b: TeamData) -> bool: return float(luck[a]) > float(luck[b]))
+		var ev := "%s Playoffs" % LEAGUES[l].name
+		var names := ["%s Champion" % ev, "%s Finalist" % ev, "%s Semi Finalist" % ev, "%s Semi Finalist" % ev]
+		var ranks := [90 - l * 15, 25, 20, 20]
+		for i in mini(top.size(), 8):
+			if i < 4:
+				_honour_team(top[i], names[i], 0, ranks[i])
+			else:
+				_honour_team(top[i], "%s Quarter Finalist" % ev, 0, 10)
+		var pool: Array = []
+		var score := {}
+		for t: TeamData in lt:
+			for p: PlayerData in t.starters(5):
+				pool.append(p)
+				score[p] = p.rating_exact() + rng.randfn(0.0, 3.0)
+				var m := rng.randi_range(14, 22)
+				var k := int(m * 18 * clampf(0.75 + (float(score[p]) - 60.0) / 60.0, 0.5, 1.4) * rng.randf_range(0.85, 1.15))
+				p.season_stats = {"m": m, "k": k, "d": int(m * 17 * rng.randf_range(0.85, 1.15)), "r_sum": 0.0}
+		pool.sort_custom(func(a: PlayerData, b: PlayerData) -> bool: return float(score[a]) > float(score[b]))
+		if not pool.is_empty():
+			_leader_titles(pool, l, 0)
+		for p: PlayerData in pool:
+			p.season_stats = {}
+
+
 ## Everyone on the team gets the title.
-func _honour_team(team: TeamData, text: String, rank: int) -> void:
+func _honour_team(team: TeamData, text: String, s: int, rank: int = -1) -> void:
+	if rank < 0: # Short form (team, text, rank): this season.
+		rank = s
+		s = season
 	for p: PlayerData in team.roster:
-		p.add_honour(text, season, rank)
+		p.add_honour(text, s, rank)
 
 
 ## Old saves: build your titles from the trophy cabinet and awards.
@@ -2932,13 +3016,7 @@ func _backfill_honours() -> void:
 		if place == 1:
 			p.add_honour(n if n.begins_with("World Cup") else "%s Champion" % n, int(t.s), 95 if n.begins_with("World Cup") else 70)
 		elif place == 2:
-			p.add_honour("%s Finalist" % n, int(t.s), 12)
-		else:
-			p.add_honour(n.replace("Promotion to the", "Promoted to the"), int(t.s), 15)
-	for a: Dictionary in awards:
-		var an := String(a.name)
-		var r := 100 if an == "Player of the Year" else (80 if an.ends_with("MVP") else (45 if an.contains("Rookie") else 35))
-		p.add_honour(an, int(a.s), r)
+			p.add_honour("%s Finalist" % n, int(t.s), 25)
 
 
 func _check_perks() -> void:
@@ -2996,9 +3074,7 @@ func _season_awards() -> void:
 		pool.sort_custom(func(a: PlayerData, b: PlayerData) -> bool: return a.season_avg_rating() > b.season_avg_rating())
 		var lname: String = LEAGUES[l].name
 		var mvp: PlayerData = pool[0]
-		mvp.add_honour("%s MVP" % lname, season, 80 - l * 12)
-		for ti in mini(5, pool.size()):
-			(pool[ti] as PlayerData).add_honour("%s Team of the Season" % lname, season, 35 - l * 5)
+		_leader_titles(pool, l, season)
 		_wire("%s MVP: %s (%.2f)" % [lname, mvp.player_name, mvp.season_avg_rating()], "good")
 		if not _review.is_empty():
 			(_review.awards as Array).append("%s MVP: %s (%.2f)" % [lname, mvp.player_name, mvp.season_avg_rating()])
@@ -3010,7 +3086,6 @@ func _season_awards() -> void:
 		var rookies := pool.filter(func(p: PlayerData) -> bool: return p.age <= 20)
 		if not rookies.is_empty():
 			var rk: PlayerData = rookies[0]
-			rk.add_honour("%s Rookie of the Year" % lname, season, 45 - l * 5)
 			_wire("%s Rookie of the Year: %s" % [lname, rk.player_name], "good")
 			if not _review.is_empty():
 				(_review.awards as Array).append("%s Rookie of the Year: %s" % [lname, rk.player_name])
@@ -3026,7 +3101,6 @@ func _season_awards() -> void:
 		return
 	world_pool.sort_custom(func(a: Array, b: Array) -> bool: return a[1] > b[1])
 	var poy: PlayerData = world_pool[0][0]
-	poy.add_honour("Player of the Year", season, 100)
 	_wire("PLAYER OF THE YEAR: %s" % poy.player_name, "good")
 	if not _review.is_empty():
 		(_review.awards as Array).insert(0, "Player of the Year: %s" % poy.player_name)
@@ -5344,7 +5418,6 @@ func _promotion_relegation() -> void:
 					_fans(int(club_fans * 0.2))
 			if mode == "player" and user_player != null and t.roster.has(user_player) and not retired:
 				trophies.append({"s": season, "name": "Promotion to the %s" % LEAGUES[l].name, "place": 0, "team": t.team_name})
-				user_player.add_honour("Promoted to the %s" % LEAGUES[l].name, season, 15)
 				_gain_fame(int(800 * _lmult(t)))
 
 

@@ -987,12 +987,28 @@ static func squad_table(players: Array, highlight: PlayerData = null, starters: 
 		if on_player.is_valid():
 			var pp := p
 			name_cell = link_button(nm, func() -> void: on_player.call(pp), 14, ncol)
+		if p.title != "":
+			name_cell.tooltip_text = p.title
+			name_cell = with_title(name_cell, p.title)
 		var cells: Array = [name_cell,
 			label(p.role, 12, TEXT_FAINT), label(str(p.age), 13, TEXT_DIM), rating_chip(p.rating(), 13), label(potential_text(p), 12, TEXT_DIM)]
 		for k: String in PlayerData.STAT_KEYS:
 			cells.append(label(str(int(round(p.stat(k)))), 13, rating_color(p.stat(k)), 600))
 		v.add_child(table_row(cells, SQUAD_COLS, i, mine))
 	return v
+
+
+## A name cell with the player's equipped title under it (small, gold, cut short if long).
+static func with_title(name_cell: Control, title: String) -> Control:
+	var box := vbox(0)
+	box.add_child(name_cell)
+	var t := label(title, 10, WARN, 600)
+	t.clip_text = true
+	t.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	t.tooltip_text = title
+	t.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(t)
+	return box
 
 
 ## Centered popup over `parent`. Returns [overlay, content_vbox]; free the overlay to close.
@@ -1035,6 +1051,9 @@ static func team_stats_table(players: Array, highlight: PlayerData = null, on_pl
 		if on_player.is_valid():
 			var pp := p
 			name_cell = link_button(p.player_name, func() -> void: on_player.call(pp), 14, ACCENT2 if mine else TEXT)
+		if p.title != "":
+			name_cell.tooltip_text = p.title
+			name_cell = with_title(name_cell, p.title)
 		var ss := p.season_stats
 		var m := int(ss.get("m", 0))
 		var avg := p.season_avg_rating()
@@ -1123,6 +1142,15 @@ static func player_card(parent: Control, w: World, p: PlayerData) -> Array:
 	var info := vbox(4)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_child(label(p.player_name, 28, TEXT, 700))
+	if p.title != "":
+		info.add_child(label(p.title, 14, WARN, 600))
+	var hs := p.honours.duplicate()
+	hs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.rank) > int(b.rank) or (int(a.rank) == int(b.rank) and int(a.s) > int(b.s)))
+	var more: Array = hs.map(func(h: Dictionary) -> String: return PlayerData.honour_label(h)).filter(func(t: String) -> bool: return t != p.title)
+	if not more.is_empty():
+		var hl := label("Titles: " + ", ".join(more.slice(0, 5)) + ((" (+%d more)" % (more.size() - 5)) if more.size() > 5 else ""), 12, TEXT_FAINT)
+		hl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		info.add_child(hl)
 	var pills := HFlowContainer.new() # Wraps: many tags must never widen the card.
 	pills.add_theme_constant_override("h_separation", 6)
 	pills.add_theme_constant_override("v_separation", 4)

@@ -83,7 +83,7 @@ func _ready() -> void:
 		var a := ChatText.analyze(case[0])
 		var got := s._infer_tone(a, s._post_target(case[0], a))
 		_check(got == case[1], "read '%s' as %s (expected %s)" % [case[0], got, case[1]])
-	# A DM with a slur: blocked, not a "flame" chat.
+	# A DM with a slur: they go off on you (no block, no leak).
 	var mate: PlayerData = null
 	for p: PlayerData in w.user_team().roster:
 		if not p.is_user:
@@ -91,8 +91,13 @@ func _ready() -> void:
 	var key := "p:%d" % mate.uid
 	var r2 := s.send(key, "shut up you f4ggot")
 	_check(String(r2.get("intent", "")) == "hate", "DM read as hate speech: %s" % r2.msg)
+	var th := s.thread(key)
+	var said: Array = th.msgs.filter(func(m: Dictionary) -> bool: return not bool(m.me)).map(func(m: Dictionary) -> String: return String(m.text))
+	print("   they said: %s" % " / ".join(said))
+	_check(said.size() >= 2, "they cuss you out back (%d lines)" % said.size())
+	_check(" ".join(said).to_lower().find("block") < 0 and " ".join(said).to_lower().find("screenshot") < 0, "no block / screenshot talk")
 	var r3 := s.send(key, "hey")
-	_check(not bool(r3.ok), "they've blocked you: %s" % r3.msg)
+	_check(bool(r3.ok), "not blocked, you can keep messaging: %s" % r3.msg)
 	_check(w.relation_strength(mate) < -0.5, "relationship wrecked (%.2f)" % w.relation_strength(mate))
 	print("hate_probe: %d failure(s)" % fails)
 	Game.end_career()

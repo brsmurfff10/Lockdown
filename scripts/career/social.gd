@@ -960,6 +960,8 @@ func _push(th: Dictionary, m: Dictionary) -> void:
 ## A bot line into a thread. ln: [text, template]. Queues the LLM rewrite.
 func _bot_say(th: Dictionary, p: PlayerData, ln: Array, intent: String, stance: String, who_override: String = "") -> Dictionary:
 	var text: String = ln[0]
+	if intent == "flame":
+		text = ChatText.raw(text)
 	if text == "":
 		return {}
 	var who := who_override if who_override != "" else (p.player_name if p != null else "?")
@@ -989,7 +991,7 @@ func _bot_say(th: Dictionary, p: PlayerData, ln: Array, intent: String, stance: 
 	th.unread = int(th.unread) + 1
 	if llm_on:
 		m["pending"] = true
-		llm_jobs.append({"msg": m, "th": th, "system": ChatText.llm_system(_llm_ctx(p, stance if stance != "" else intent, who_override != "")),
+		llm_jobs.append({"msg": m, "th": th, "system": ChatText.llm_system(_llm_ctx(p, ("hostile_flame" if intent == "flame" and stance == "hostile" else stance) if stance != "" else intent, who_override != "")),
 			"user": _llm_user(th, intent), "fallback": text, "intent": intent})
 		_cap_jobs()
 	return m
@@ -1201,7 +1203,7 @@ func _dm_reply(th: Dictionary, p: PlayerData, _text: String, a: Dictionary, inte
 	var stance := "neutral"
 	var bank: Array = []
 	var res := ""
-	if int(th.sent_n) > 6:
+	if int(th.sent_n) > (14 if intent == "flame" else 6):
 		var ln0: Array = ChatText.line(ChatText.DM.spam.annoyed, v, slots, w.rng, th.recent)
 		_bot_say(th, p, ln0, "spam", "annoyed")
 		w._relate(p.uid, -1.0)
@@ -1210,11 +1212,11 @@ func _dm_reply(th: Dictionary, p: PlayerData, _text: String, a: Dictionary, inte
 	match intent:
 		"flame":
 			if rel < -0.2 or v == "toxic":
-				stance = "hostile" if not mate else "angry"
+				stance = "hostile" if not mate and w.rng.randf() < 0.4 else "angry"
 			elif mate:
-				stance = "hurt" if v in ["shy", "pro", "mentor", "igl"] else "angry"
+				stance = "hurt" if v in ["shy", "mentor"] and w.rng.randf() < 0.5 else "angry"
 			else:
-				stance = "laugh" if w.rng.randf() < 0.5 else "angry"
+				stance = "laugh" if w.rng.randf() < 0.35 else "angry"
 			if eff:
 				w._relate(p.uid, -(12.0 + 25.0 * harsh))
 				toxicity = minf(100.0, toxicity + 5.0 + 8.0 * harsh)
@@ -1343,9 +1345,13 @@ func _dm_reply(th: Dictionary, p: PlayerData, _text: String, a: Dictionary, inte
 	var ln: Array = ChatText.line(bank, v, slots, w.rng, th.recent)
 	_bot_say(th, p, ln, intent, stance)
 	# Chatty voices sometimes add a second line.
-	if v in ["showman", "chill", "toxic"] and stance in ["warm", "laugh", "interested", "yes"] and w.rng.randf() < 0.2:
+	if intent != "flame" and v in ["showman", "chill", "toxic"] and stance in ["warm", "laugh", "interested", "yes"] and w.rng.randf() < 0.2:
 		var extra: Array = ChatText.line(ChatText.DM.smalltalk.warm, v, slots, w.rng, th.recent)
 		_bot_say(th, p, extra, intent, stance)
+	# Insulted: they often double-text another shot.
+	if intent == "flame" and stance != "hurt" and w.rng.randf() < (0.7 if v in ["toxic", "showman"] else 0.4):
+		var more: Array = ChatText.line(ChatText.DM.flame.double, v, slots, w.rng, th.recent)
+		_bot_say(th, p, more, intent, stance)
 	return res
 
 
@@ -1981,8 +1987,9 @@ const HATE_PRESS := ["{me} under fire after posting a slur on social media. {tea
 	"{me}'s post: fans, players and partners react with anger."]
 const HATE_MATES := ["That's not who we are. I don't stand with that.", "Disappointed doesn't cover it.",
 	"I've spoken to the team. That post doesn't represent any of us.", "Not ok. Not even close."]
-const HATE_REPLY := ["what the fuck is wrong with you", "blocked. don't message me again", "screenshotted. good luck",
-	"wow. ok. we're done", "you're actually disgusting", "reported."]
+const HATE_REPLY := ["what the fuck is wrong with you, you absolute brain-dead moron", "typed that with your whole chest huh. fucking loser",
+	"that's all you got? your mom types harder than that, dickhead", "go fuck yourself, and bring your dogshit aim with you",
+	"say that shit at the match. i'll be waiting, bitch"]
 
 
 func _hate_slots() -> Dictionary:
@@ -2024,12 +2031,20 @@ func _hate_post(text: String) -> Dictionary:
 func _hate_dm(th: Dictionary, key: String, p: PlayerData) -> String:
 	var me := w.user_player
 	toxicity = minf(100.0, toxicity + 45.0)
-	th["blocked_until"] = w.stamp() + 10
 	var who := String(th.title)
 	if p != null:
-		w._relate(p.uid, -80.0)
-		_push(th, {"me": false, "who": p.player_name, "uid": p.uid, "text": HATE_REPLY[w.rng.randi() % HATE_REPLY.size()], "s": w.season, "w": w.week})
-	elif key == "team":
+		# A player DM: they cuss you out right back. No block, no screenshots.
+		w._relate(p.uid, -60.0)
+		var v := ChatText.voice(p)
+		var sl := _slots(p)
+		_replying = true
+		th["next_at"] = Time.get_unix_time_from_system()
+		_bot_say(th, p, ChatText.line(ChatText.DM.flame.angry, v, sl, w.rng, th.recent), "flame", "angry")
+		_bot_say(th, p, [HATE_REPLY[w.rng.randi() % HATE_REPLY.size()], ""], "flame", "angry")
+		_replying = false
+		return "%s is going off on you." % p.player_name
+	th["blocked_until"] = w.stamp() + 10
+	if key == "team":
 		for q: PlayerData in mates():
 			w._relate(q.uid, -40.0)
 		var m0: Array = mates()
@@ -2038,9 +2053,6 @@ func _hate_dm(th: Dictionary, key: String, p: PlayerData) -> String:
 			_push(th, {"me": false, "who": q0.player_name, "uid": q0.uid, "text": "nah. that's going straight to management.", "s": w.season, "w": w.week})
 	else:
 		_push(th, {"me": false, "who": who, "uid": 0, "text": "We will be speaking to you about this formally.", "s": w.season, "w": w.week})
-	var leaked := p == null or w.rng.randf() < (0.9 if _is_mate(p) else 0.6)
-	if not leaked:
-		return "%s has blocked you." % who
 	hate_count += 1
 	var parts: Array = ["%s has blocked you, and it got out." % who]
 	var lost := int(w.fame * 0.12)

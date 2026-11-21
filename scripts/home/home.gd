@@ -13,6 +13,7 @@ const ART_PPC := 64.0 ## Pixels per cell in the renders.
 const SPEED := 150.0
 const RADIUS := 10.0
 const REACH := 26.0
+const STRIDE_TIME := 0.36 ## Seconds between footsteps at walking speed.
 const BODY_SCALE := 1.4 ## People drawn a bit bigger than true scale so they read next to furniture.
 const DATA_DIR := "res://data/homes/"
 const ART_DIR := "res://assets/homes/"
@@ -45,6 +46,9 @@ var pos := Vector2.ZERO
 var face := Vector2.DOWN
 var moving := false
 var walk_t := 0.0
+var step_player: AudioStreamPlayer
+var stride_t := 0.0
+var steps_played := 0 ## Tests.
 var pets: Array = [] ## {id, pos, path, wait, dir, tex}
 var npcs: Array = [] ## {p: PlayerData or null, name, pos, dir, chef}
 var casual: Array = [] ## Textures for casual bodies (assets/homes/casual.json), or empty.
@@ -71,6 +75,11 @@ func _ready() -> void:
 	home_id = tour if tour != "" else life.home
 	_load_layout()
 	_build_ui()
+	step_player = AudioStreamPlayer.new()
+	step_player.stream = Sfx._load_stream("lockdown_footstep")
+	step_player.bus = "SFX"
+	step_player.volume_db = -10.0
+	add_child(step_player)
 	cam = Camera2D.new()
 	cam.position_smoothing_enabled = true
 	cam.position_smoothing_speed = 10.0
@@ -341,6 +350,7 @@ func _process(delta: float) -> void:
 	if moving:
 		face = face.lerp(v.normalized(), minf(1.0, delta * 14.0)).normalized()
 		var step := v * SPEED * delta
+		var before := pos
 		var nx := pos + Vector2(step.x, 0.0)
 		if not _blocked(nx):
 			pos = nx
@@ -348,6 +358,10 @@ func _process(delta: float) -> void:
 		if not _blocked(ny):
 			pos = ny
 		walk_t += delta
+		if pos.distance_to(before) > SPEED * delta * 0.3:
+			_footstep(delta)
+	else:
+		stride_t = 0.0
 	cam.global_position = pos
 	_pets_tick(delta)
 	for n: Dictionary in npcs:
@@ -361,6 +375,18 @@ func _process(delta: float) -> void:
 		toast_t -= delta
 		toast.modulate.a = clampf(toast_t / 0.6, 0.0, 1.0)
 	queue_redraw()
+
+
+## Footsteps while you walk (none when pressed against a wall).
+func _footstep(delta: float) -> void:
+	stride_t -= delta
+	if stride_t > 0.0:
+		return
+	stride_t = STRIDE_TIME
+	steps_played += 1
+	if step_player != null and step_player.stream != null:
+		step_player.pitch_scale = randf_range(0.9, 1.1)
+		step_player.play()
 
 
 func _nearest_use() -> Dictionary:

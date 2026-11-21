@@ -5,11 +5,11 @@ Top-down tactical 5v5 shooter (T vs CT, bomb defusal) with a career layer. Godot
 ## Run
 Open the folder in Godot 4.4+ and press F5.
 
-**Controls:** WASD move, mouse aim, left click shoot, R reload, 1 primary / 2 pistol / Q swap,
+**Controls:** WASD move, Shift (held) walk: half speed, no footsteps, mouse aim, left click shoot, R reload, 1 primary / 2 pistol / Q swap,
 4 grenade in hand (press again for the next one; click throws at the cursor),
 E (hold) plant/defuse, F pick up a gun, G drop (bomb first, else the gun in hand), Y ask the carrier
 for the bomb (buy phase or live), B buy menu, Tab scoreboard, Enter continue, Esc leave (quick match only).
-Right mouse (held) scopes in with scoped guns. V in the buy phase: replay the last round.
+Right mouse (held) scopes in with scoped guns and looks further ahead. V in the buy phase: replay the last round.
 Dead or spectating: click / right-click next / previous player (teammates only once you're dead),
 Space free camera (WASD, Shift = fast), wheel zoom.
 

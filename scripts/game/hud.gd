@@ -477,7 +477,7 @@ func _build_action() -> void:
 
 
 func _build_hint() -> void:
-	_hint = UI.label("Shift/RMB look   R reload   1/2/Q weapons   4 grenades   E plant/defuse   F pick up   G drop   Y ask for bomb   B buy   Tab scores", 11, Color(UI.TEXT_DIM, 0.7))
+	_hint = UI.label("Shift walk   RMB look   R reload   1/2/Q weapons   4 grenades   E plant/defuse   F pick up   G drop   Y ask for bomb   B buy   Tab scores", 11, Color(UI.TEXT_DIM, 0.7))
 	_anchor(_hint, 0, 1, 1, 1)
 	_hint.offset_top = -26
 	_hint.offset_bottom = -6

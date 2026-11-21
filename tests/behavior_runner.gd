@@ -76,7 +76,7 @@ func _scenario_memory(ct_hp: float) -> void:
 		var seen_spot := t.global_position
 		# T steps out of sight (behind the catwalk wall).
 		t.global_position = m.arena.pt(Vector2i(27, 12))
-		await _frames(18)
+		await _frames(30) # Past the lost-sight grace (BotController.LOST_GRACE).
 		var ctrl: BotController = null
 		for c in ct.get_children():
 			if c is BotController:
@@ -117,7 +117,7 @@ func _scenario_attacker_chases_weak() -> void:
 		ct.global_position = m.arena.pt(Vector2i(38, 16))
 		await _frames(12)
 		ct.global_position = m.arena.pt(Vector2i(34, 13)) # Into short A, out of sight.
-		await _frames(18)
+		await _frames(30) # Past the lost-sight grace (BotController.LOST_GRACE).
 		var ctrl: BotController = null
 		for c in t.get_children():
 			if c is BotController:

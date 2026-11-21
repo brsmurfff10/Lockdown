@@ -91,6 +91,8 @@ var ct_setup: Dictionary = {}
 var ct_home := {} ## Unit -> {site, pos, look}
 var ct_state := {} ## Unit -> "hold" | "aggro" | "rotate" | "flank" | "retake" | "save"
 var ct_rotate_at := {} ## Unit -> round_clock when they start moving
+var _ct_full := false ## The current hit call is confirmed: everyone rotates.
+var _late_anchor := {} ## Unit -> true: the anchor, rotating after a delay.
 var ct_rotate_dest := {} ## Unit -> [pos, look]
 var ct_call_site := ""
 var ct_call_strength := 0
@@ -101,6 +103,9 @@ var _util_cd := {} ## Unit -> round clock when it may throw again.
 var _smoked: Array[Vector2] = [] ## Where smokes went this round (no doubling up).
 var _escaping := {} ## Unit -> escape order once running from the bomb (overrides everything).
 var ct_defuser: Unit = null ## Sticky: keeps the job until dead.
+var defuse_push := false ## Post-plant: a defuse that would finish is under way; Ts go and stop it.
+var _awp_spot := {} ## PlayerData -> last round's AWP home pos (they switch it up), _awp_died: died there.
+var _awp_died := {}
 var ct_info: Unit = null ## CT making an info play this round.
 var ct_info_until := 0.0
 var _ct_info_done := false
@@ -140,6 +145,17 @@ var _wait_block := {} ## T -> no more waiting until this clock (don't stand fore
 var _lurk_joined := false
 var _retake_first := -1.0 ## Clock the first CT reached a retake stage.
 var trade_partner := {} ## Unit -> teammate who refrags for them (entry + trader pairs).
+# 0.19 AI (off with --ab=old_ai4): imperfect comms, tilt, reading the enemy, clutches.
+var _pending_calls: Array = [] ## Calls on their way: {at, side, enemy, pos, jit, spotter, text}.
+var _call_block := [{}, {}] ## [side] -> {enemy: clock}: a call is pending (or was missed) for this contact.
+var tilt := {} ## PlayerData -> 0..3: rounds in a row they died without a kill (match-long).
+var _round_kills := {} ## PlayerData -> kills this round.
+var hot := {} ## team index -> [[pos, weight]]: where that team keeps killing from (their favourite angles).
+var ninja := false ## Last CT is sneaking a defuse while the Ts look elsewhere.
+var _room_flashed := {} ## Unit -> true: already flashed a building room on the way in this round.
+static var calls_missed := 0 ## Dev stats.
+static var calls_made := 0
+static var room_util := 0
 var _last_kill := {} ## killer Unit -> [clock, victim side] (for trade stats).
 static var deaths_count := 0 ## Dev stats: deaths...
 static var traded_count := 0 ## ...that were traded within 3s.
@@ -161,6 +177,18 @@ func strategy_label() -> String:
 
 func setup_round() -> void:
 	_round_ct_seen = {"A": {}, "B": {}}
+	_pending_calls.clear()
+	_call_block = [{}, {}]
+	_round_kills.clear()
+	_room_flashed.clear()
+	ninja = false
+	for team in hot:
+		var keep: Array = []
+		for e: Array in hot[team]:
+			e[1] = float(e[1]) * 0.7 # Old habits fade.
+			if float(e[1]) > 0.2:
+				keep.append(e)
+		hot[team] = keep
 	_fake_to = ""
 	orders.clear()
 	seen_by = [{}, {}]
@@ -279,6 +307,16 @@ func _setup_t() -> void:
 			continue
 		t_route[u] = routes[i % routes.size()]
 		i += 1
+	# Walk-through buildings: some players take the way through the building
+	# to the same site instead (a different angle, out of the open).
+	for u in ts:
+		var rn: String = t_route.get(u, "")
+		if rn == "" or rn == "lurk" or not arena.routes.has(rn):
+			continue
+		var extra: Array = arena.site_info.get(String(arena.routes[rn].site), {}).get("building_routes", [])
+		extra = extra.filter(func(x) -> bool: return arena.routes.has(x))
+		if not extra.is_empty() and rng.randf() < 0.3:
+			t_route[u] = String(extra[rng.randi() % extra.size()])
 	_assign_t_site_spots()
 
 
@@ -350,6 +388,8 @@ func _setup_ct() -> void:
 	ct_state.clear()
 	ct_rotate_at.clear()
 	ct_rotate_dest.clear()
+	_late_anchor.clear()
+	_ct_full = false
 	ct_retake_stage.clear()
 	t_execute_at = -1.0
 	_util_cd.clear()
@@ -400,6 +440,34 @@ func _setup_ct() -> void:
 			home = {"site": site, "pos": arena.pt(h[0]), "look": arena.pt(h[1])}
 		ct_home[u] = home
 		ct_state[u] = "aggro" if site == "mid" and aggro_mid else "hold"
+	# AWPers don't sit on the same angle every round (and never the one they
+	# just died on): sometimes mid, sometimes a long angle on a site.
+	if not Game.ab_flag("old_ai3"):
+		for u in cts:
+			if u.data.role != "AWPer" or pers(u).has("awp_angle"):
+				continue
+			var last: Vector2 = _awp_spot.get(u.data, Vector2.INF)
+			var died: bool = bool(_awp_died.get(u.data, false))
+			var cur: Dictionary = ct_home[u]
+			if last == Vector2.INF or ((cur.pos as Vector2).distance_to(last) > 120.0 and not died and rng.randf() < 0.5):
+				continue
+			var options: Array = []
+			for site: String in ["A", "B"]:
+				for h: Array in arena.site_info[site].ct_holds:
+					var hp := arena.pt(h[0])
+					if hp.distance_to(last) > 160.0 or not died:
+						options.append({"site": site, "pos": hp, "look": arena.pt(h[1])})
+			var mp := arena.jittered("mid_hold", rng, 2)
+			if mp.distance_to(last) > 160.0 or not died:
+				options.append({"site": "mid", "pos": mp, "look": arena.pt("mid_center")})
+			options = options.filter(func(o: Dictionary) -> bool: return (o.pos as Vector2).distance_to(last) > 120.0)
+			if not options.is_empty():
+				ct_home[u] = options[rng.randi() % options.size()]
+				ct_state[u] = "hold"
+		for u in cts:
+			if u.data.role == "AWPer":
+				_awp_spot[u.data] = (ct_home[u] as Dictionary).pos
+				_awp_died[u.data] = false
 	# Habit: an AWPer with a favourite angle goes back to it every round.
 	for u in cts:
 		var home: Dictionary = ct_home[u]
@@ -466,17 +534,19 @@ static var heard_count := 0 ## Dev stats.
 func hear(src: Unit, kind: String) -> void:
 	var radius: float = SOUND_RANGE.get(kind, 500.0)
 	var best: Unit = null
-	var best_d := radius
+	var best_d := INF
 	for u: Unit in m.units:
 		if u.alive and u.side != src.side:
 			var d := u.global_position.distance_to(src.global_position)
-			if d < best_d:
+			# Standing still to listen: you hear further.
+			var r := radius * (1.4 if _ai4() and _listening(u) else 1.0)
+			if d < r and d < best_d:
 				best_d = d
 				best = u
 	if best == null:
 		return
 	var skill := (best.data._t("positioning") + best.data._t("decision")) * 0.5
-	var unc := lerpf(30.0, 150.0, best_d / radius) * lerpf(1.35, 0.65, skill)
+	var unc := lerpf(30.0, 150.0, minf(best_d / radius, 1.0)) * lerpf(1.35, 0.65, skill)
 	var prev: Dictionary = seen_by[best.side].get(src, {})
 	if not prev.is_empty() and String(prev.get("kind", "")) == "seen" and m.round_clock - float(prev.time) < 0.5:
 		return # They're looking at him anyway.
@@ -487,6 +557,13 @@ func hear(src: Unit, kind: String) -> void:
 	for c in best.get_children():
 		if c is BotController:
 			(c as BotController).on_heard(Vector2(seen_by[best.side][src].pos), kind)
+
+
+func _listening(u: Unit) -> bool:
+	for c in u.get_children():
+		if c is BotController:
+			return (c as BotController).listening
+	return false
 
 
 ## How sure `side` still is about an entry: fades with age (sightings slower
@@ -575,6 +652,24 @@ func evidence(site: String) -> float:
 func on_spotted(spotter: Unit, enemy: Unit) -> void:
 	var prev: Dictionary = seen_by[spotter.side].get(enemy, {})
 	var fresh_contact: bool = prev.is_empty() or m.round_clock - float(prev.time) > 6.0
+	if fresh_contact and _ai4() and not Game.ab_flag("no_calls") and not _human(spotter) and m.is_live():
+		# Comms aren't instant or perfect: the first call on a new contact takes a
+		# moment, is rough, and in the chaos sometimes never gets made.
+		if m.round_clock - float(_call_block[spotter.side].get(enemy, -100.0)) < 3.0:
+			return
+		_call_block[spotter.side][enemy] = m.round_clock
+		var dec := spotter.data._t("decision")
+		if rng.randf() < lerpf(0.16, 0.03, dec):
+			calls_missed += 1
+			return
+		var n0 := known_enemies_near(spotter.side, enemy.global_position, 500.0) + 1
+		var text := "Bomb carrier %s!" % _where(enemy.global_position) if enemy.has_bomb \
+				else ("%d %s!" % [n0, _where(enemy.global_position)] if n0 >= 2 else "One %s." % _where(enemy.global_position))
+		_pending_calls.append({"at": m.round_clock + lerpf(1.1, 0.3, dec) * rng.randf_range(0.7, 1.3), "side": spotter.side,
+			"enemy": enemy, "pos": enemy.global_position, "jit": lerpf(110.0, 35.0, dec), "spotter": spotter, "text": text})
+		if spotter.side == T:
+			t_contact_time = m.round_clock
+		return
 	_note(spotter.side, enemy, enemy.global_position, 40.0, "seen")
 	if spotter.side == T and enemy.side == CT and m.round_clock < 30.0 * arena.tempo:
 		var near := arena.threat_at(enemy.global_position)
@@ -594,8 +689,46 @@ func on_spotted(spotter: Unit, enemy: Unit) -> void:
 	elif enemy.has_bomb and m.bomb_state == m.Bomb.CARRIED:
 		# "Bomb spotted!" — that's where the hit is going: full rotate.
 		var site := arena.threat_at(enemy.global_position)
-		if (site == "A" or site == "B") and (site != ct_call_site or ct_call_strength < 3):
-			_ct_call(site, 3)
+		if (site == "A" or site == "B") and (site != ct_call_site or ct_call_strength < 3 or not _ct_full):
+			_ct_call(site, 3, true)
+
+
+func _ai4() -> bool:
+	return not Game.ab_flag("old_ai4")
+
+
+## Calls that were on their way land now (where the enemy was when seen, roughly).
+func _deliver_calls() -> void:
+	if _pending_calls.is_empty():
+		return
+	var keep: Array = []
+	for c: Dictionary in _pending_calls:
+		if float(c.at) > m.round_clock:
+			keep.append(c)
+			continue
+		var e = c.enemy
+		if not is_instance_valid(e):
+			continue
+		_note(int(c.side), e, c.pos, float(c.jit), "seen")
+		calls_made += 1
+		var sp = c.spotter
+		if is_instance_valid(sp):
+			_say(sp, String(c.text))
+		_call_block[int(c.side)].erase(e)
+	_pending_calls = keep
+
+
+## Where `side`'s enemies keep killing from (strongest first): their favourite angles.
+func hot_angles(side: int) -> Array:
+	var out: Array = []
+	for e: Array in hot.get(m.team_of_side(1 - side), []):
+		if float(e[1]) >= 0.6:
+			out.append(e[0])
+	return out
+
+
+func tilt_of(u: Unit) -> float:
+	return float(tilt.get(u.data, 0.0)) if _ai4() else 0.0
 
 
 func on_planted(site: String, pos: Vector2) -> void:
@@ -667,6 +800,22 @@ func _listen_for_footsteps() -> void:
 
 
 func on_death(victim: Unit, killer: Unit) -> void:
+	if m.is_live() and killer != null and is_instance_valid(killer) and killer.side != victim.side and _ai4():
+		_round_kills[killer.data] = int(_round_kills.get(killer.data, 0)) + 1
+		# Remember the angle they killed us from: they'll play it again.
+		var team: int = m.team_of_side(killer.side)
+		var list: Array = hot.get(team, [])
+		var merged := false
+		for e: Array in list:
+			if (e[0] as Vector2).distance_to(killer.global_position) < 140.0:
+				e[0] = (e[0] as Vector2).lerp(killer.global_position, 0.3)
+				e[1] = float(e[1]) + 1.0
+				merged = true
+				break
+		if not merged:
+			list.append([killer.global_position, 1.0])
+		list.sort_custom(func(a: Array, b: Array) -> bool: return float(a[1]) > float(b[1]))
+		hot[team] = list.slice(0, 10)
 	if m.is_live() and killer != null and killer.side != victim.side:
 		deaths_count += 1
 		_last_kill[killer] = m.round_clock
@@ -921,6 +1070,7 @@ func update(delta: float) -> void:
 	if _tick > 0.0:
 		return
 	_tick = 0.25
+	_deliver_calls()
 	_listen_for_footsteps()
 	_clear_markers()
 	_pair_traders()
@@ -936,6 +1086,7 @@ func update(delta: float) -> void:
 		_igl_think()
 	_update_saves()
 	_update_bomb_escape()
+	_update_defuse_push()
 	_update_utility()
 
 
@@ -1026,7 +1177,7 @@ func _update_t() -> void:
 func _run_fake() -> void:
 	var fake := t_site
 	var thrown := 0
-	for u in _alive(T):
+	for u in (_alive(T) if not _alive(CT).is_empty() else []):
 		if thrown >= 2 or _human(u) or u.grenades.is_empty():
 			continue
 		for k: String in ["smoke", "flash", "molotov"]:
@@ -1095,6 +1246,12 @@ func _t_order(u: Unit) -> Dictionary:
 	var pts: Array[Vector2] = []
 	match t_phase:
 		"postplant":
+			if defuse_push and not Game.ab_flag("old_ai3"):
+				var left: float = m.defuser.action_timer if m.defuser != null and is_instance_valid(m.defuser) else 0.0
+				var eta := _walk_dist(u.global_position, m.bomb_pos) / maxf(u.top_speed(), 1.0)
+				if eta < left + 2.5 or m.has_line_of_sight(u.global_position, m.bomb_pos):
+					thought[u] = "they're defusing: push the bomb!"
+					return _order([m.bomb_pos], m.bomb_pos, "", false)
 			if u == t_lurker:
 				# Lurker cuts off the rotation from behind.
 				return _order([arena.jittered("ct_mid", rng, 1)], arena.pt(arena.site_info[t_site].retake[0]), "", true)
@@ -1286,7 +1443,14 @@ func _watch_dropped_bomb(cts: Array[Unit]) -> void:
 				orders.erase(u)
 
 
-func _ct_call(site: String, strength: int) -> void:
+## `full`: the hit is confirmed (bomb seen, or 4+ of them): nobody stays behind.
+## Otherwise one anchor stays on the other site for a few seconds in case it's
+## a fake or a lurker, then follows unless enemies show up there.
+func _ct_call(site: String, strength: int, full: bool = false) -> void:
+	full = full or strength >= 4
+	if site != ct_call_site:
+		_ct_full = false
+	_ct_full = _ct_full or full
 	ct_call_site = site
 	ct_call_strength = strength
 	if _fake_site != "" and site == _fake_site and strength >= 3 and not _fake_counted:
@@ -1304,20 +1468,31 @@ func _ct_call(site: String, strength: int) -> void:
 		if ct_home[u].site == other:
 			anchor = u
 			break
+	if _ct_full or Game.ab_flag("old_anchor"):
+		anchor = null if _ct_full else anchor
 	var flank_used := false
 	var hold_i := 0
 	for u in cts:
 		var home_site: String = ct_home[u].site
-		if home_site == site or u == anchor:
+		if home_site == site:
+			continue
+		if u == anchor and (strength < 3 or Game.ab_flag("old_anchor")):
 			continue
 		if strength < 3 and home_site != "mid":
 			continue # Small push: only mid helps.
 		var st: String = ct_state.get(u, "hold")
+		if _ct_full and _late_anchor.has(u):
+			# Confirmed now: the waiting anchor goes right away.
+			_late_anchor.erase(u)
+			ct_rotate_at[u] = minf(float(ct_rotate_at.get(u, 0.0)), m.round_clock + 0.8)
 		if st == "rotate" or st == "flank" or st == "contest":
 			continue
 		# Early, late or on time: poor decision makers are all over the place.
 		var dec := u.data._t("decision")
 		var react := lerpf(2.8, 0.6, dec) * rng.randf_range(lerpf(0.45, 0.8, dec), lerpf(1.6, 1.2, dec))
+		if u == anchor:
+			react += rng.randf_range(6.0, 9.0) # Watch for a lurker / fake first.
+			_late_anchor[u] = true
 		ct_rotate_at[u] = m.round_clock + react
 		if strength >= 3 and not flank_used and cts.size() >= 3 and (u.data.role in ["Lurker", "Entry"] or rng.randf() < 0.3):
 			ct_state[u] = "flank"
@@ -1396,7 +1571,10 @@ func _ct_order(u: Unit) -> Dictionary:
 			return _order([spot], look, "", true)
 		"rotate":
 			if m.round_clock < float(ct_rotate_at.get(u, 0.0)):
-				thought[u] = "heard the call, about to rotate"
+				thought[u] = "anchoring: watching for a lurker" if _late_anchor.has(u) else "heard the call, about to rotate"
+				return _home_order(home)
+			if _late_anchor.has(u) and _fresh_enemies_near(CT, home.pos, 700.0, 6.0) > 0:
+				thought[u] = "anchoring: they're here too"
 				return _home_order(home)
 			var d: Array = ct_rotate_dest[u]
 			var site_r := ct_call_site if ct_call_site != "" else String(home.site)
@@ -1409,6 +1587,7 @@ func _ct_order(u: Unit) -> Dictionary:
 			if m.round_clock < float(ct_rotate_at.get(u, 0.0)):
 				return _home_order(home)
 			var site := ct_call_site if ct_call_site != "" else "A"
+			thought[u] = "flanking %s" % site
 			var pts: Array[Vector2] = []
 			for p in arena.site_info[site].flank:
 				pts.append(arena.jittered(p, rng, 1))
@@ -1601,7 +1780,14 @@ func _fresh_enemies_near(side: int, pos: Vector2, radius: float, max_age: float)
 
 func _retake_clear() -> bool:
 	var defuse_need: float = m.DEFUSE_TIME_KIT if _defuser() != null and _defuser().has_kit else m.DEFUSE_TIME
+	ninja = false
 	if m.bomb_timer < defuse_need + 4.0 or _alive(T).is_empty():
+		return true
+	# Clutch: last CT, the Ts haven't been seen near the bomb lately: sneak the defuse.
+	if _ai4() and _alive(CT).size() == 1 and _fresh_enemies_near(CT, m.bomb_pos, 900.0, 5.0) == 0 \
+			and m.bomb_timer > defuse_need + 0.5 and rng.randf() < 0.5 + 0.4 * _alive(CT)[0].data._t("decision"):
+		ninja = true
+		thought[_alive(CT)[0]] = "clutch: ninja defuse, they're not watching it"
 		return true
 	if known_enemies_near(CT, m.bomb_pos, 800.0) > 0:
 		return false
@@ -1767,10 +1953,18 @@ func _ct_save_check(cts: Array[Unit], ts: Array[Unit]) -> void:
 
 
 var _save_spot := {}
+var _save_look := {} ## Unit -> the one way into their save corner (they hold it).
 
 
 func _start_save(u: Unit) -> void:
 	saving[u] = true
+	if not Game.ab_flag("old_save"):
+		# A corner away from the sites, the bomb and everyone we've seen, holding
+		# the one way in. Planted: also clear of the blast in time.
+		var t_max := maxf(m.bomb_timer - 1.0, 2.0) if m.bomb_state == m.Bomb.PLANTED else 10.0
+		_save_spot[u] = _save_corner(u, t_max)
+		orders[u] = _save_order(u)
+		return
 	# Hide: tucked in a corner away from the enemies (and clear of a planted
 	# bomb), toward home, where a hunting team won't just walk into us.
 	if m.bomb_state == m.Bomb.PLANTED:
@@ -1824,7 +2018,87 @@ func _hide_spot(u: Unit, avoid: Vector2, min_r: float, max_time: float) -> Vecto
 
 func _save_order(u: Unit) -> Dictionary:
 	thought[u] = "saving: round is lost, keep the gun"
+	if _save_look.has(u) and not Game.ab_flag("old_save"):
+		thought[u] = "saving: holding a corner, one angle"
+		return _order([_save_spot.get(u, u.global_position)], _save_look[u], "", true)
 	return _order([_save_spot.get(u, u.global_position)], arena.pt("mid_center"), "", true)
+
+
+## Places a saver keeps away from: both bomb sites, the bomb (planted: the
+## blast; dropped: where everyone goes) and every enemy seen in the last 15 s.
+func _save_avoid(u: Unit) -> Array:
+	var out: Array = [] # [pos, radius]
+	for s: String in ["A", "B"]:
+		out.append([arena.site_center(s), 520.0])
+	if m.bomb_state == m.Bomb.PLANTED:
+		out.append([m.bomb_pos, m.BOMB_RADIUS + 160.0])
+	elif m.bomb_state == m.Bomb.DROPPED:
+		out.append([m.bomb_pos, 480.0])
+	for e in seen_by[u.side]:
+		if is_instance_valid(e) and e.alive and m.round_clock - float(seen_by[u.side][e].time) < 15.0:
+			out.append([seen_by[u.side][e].pos, 480.0])
+	return out
+
+
+## Open directions out of a cell (8 rays, up to `reach` cells): how many ways
+## someone could come at you, and the longest one (the way in to watch).
+func _open_rays(c: Vector2i, reach: int) -> Array:
+	var open := 0
+	var best_len := 0
+	var best_dir := Vector2.RIGHT
+	for dv: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+		var n := 0
+		while n < reach and not arena.is_solid(c + dv * (n + 1)):
+			n += 1
+		if n >= 3:
+			open += 1
+		if n > best_len:
+			best_len = n
+			best_dir = Vector2(dv).normalized()
+	return [open, best_dir, best_len]
+
+
+## A one-and-done save spot: reachable in time, clear of every place to avoid
+## and out of their sight, tucked into a corner with as few ways in as possible.
+func _save_corner(u: Unit, max_time: float) -> Vector2:
+	var me := u.global_position
+	var speed := u.top_speed() * 0.9
+	var avoid := _save_avoid(u)
+	var cands: Array = []
+	for k in 280:
+		var r := rng.randf_range(80.0, minf(speed * max_time, 1400.0))
+		var c := arena.nearest_open(arena.world_to_cell(me + Vector2.from_angle(rng.randf() * TAU) * r))
+		var p := arena.cell_center(c)
+		var ok := true
+		var sc := 0.0
+		for av: Array in avoid:
+			var d := p.distance_to(av[0])
+			if d < float(av[1]):
+				ok = false
+				break
+			sc += minf(d - float(av[1]), 600.0) / 600.0 * 0.4 # Further from trouble is better.
+			if m.has_wall_los(av[0], p):
+				sc -= 2.5
+		if not ok:
+			continue
+		var walls := 0
+		for dv in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+			if arena.is_solid(c + dv):
+				walls += 1
+		var rays := _open_rays(c, 8)
+		sc += minf(walls, 6) * 0.85 # A real corner, not the middle of a corridor.
+		sc -= maxf(int(rays[0]) - 1, 0) * 0.9 # One way in: one angle to hold.
+		sc -= me.distance_to(p) / 900.0
+		sc += rng.randf() * 0.15
+		cands.append([sc, p, rays[1]])
+	cands.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0])
+	for i in mini(8, cands.size()):
+		var p: Vector2 = cands[i][1]
+		if _walk_dist(me, p) / speed <= max_time:
+			_save_look[u] = p + (cands[i][2] as Vector2) * 320.0
+			return p
+	_save_look.erase(u)
+	return _hide_spot(u, m.bomb_pos if m.bomb_state == m.Bomb.PLANTED else me, 300.0, max_time)
 
 
 # =============================================================================
@@ -1833,6 +2107,18 @@ func _save_order(u: Unit) -> Dictionary:
 
 func on_round_decided(winner_side: int) -> void:
 	_remember_round(winner_side)
+	if _ai4():
+		# Tilt: dying round after round without a kill gets to people.
+		for u: Unit in m.units:
+			var k := int(_round_kills.get(u.data, 0))
+			var tl := float(tilt.get(u.data, 0.0))
+			if not u.alive and k == 0:
+				tl = minf(3.0, tl + 1.0)
+			elif k >= 2:
+				tl = 0.0
+			else:
+				tl = maxf(0.0, tl - 0.5)
+			tilt[u.data] = tl
 	hunting = true
 	for u in _alive(1 - winner_side):
 		_start_save(u)
@@ -1894,7 +2180,10 @@ func _update_bomb_escape() -> void:
 		# A real hiding spot well clear of the blast (not one step past the edge),
 		# out of sight of the enemies we know about. Picked once per bot.
 		if not _save_spot.has(u) or (_save_spot[u] as Vector2).distance_to(m.bomb_pos) < m.BOMB_RADIUS + 60.0:
-			_save_spot[u] = _hide_spot(u, m.bomb_pos, m.BOMB_RADIUS + 140.0, maxf(m.bomb_timer - 1.0, 2.0))
+			if Game.ab_flag("old_save"):
+				_save_spot[u] = _hide_spot(u, m.bomb_pos, m.BOMB_RADIUS + 140.0, maxf(m.bomb_timer - 1.0, 2.0))
+			else:
+				_save_spot[u] = _save_corner(u, maxf(m.bomb_timer - 1.0, 2.0))
 		var spot: Vector2 = _save_spot[u]
 		var time_out := _walk_dist(u.global_position, spot) / (u.top_speed() * 0.9) + 1.0
 		if _bomb_seen(u) > time_out + 2.5: # Someone who lost track of the timer goes late.
@@ -1935,9 +2224,13 @@ func _update_utility() -> void:
 		return
 	if Game.ab_flag("no_util"):
 		return
+	var alive_t := not _alive(T).is_empty()
+	var alive_ct := not _alive(CT).is_empty()
 	for u: Unit in m.units:
 		if not u.alive or _human(u) or u.grenades.is_empty() or _escaping.has(u):
 			continue
+		if not (alive_ct if u.side == T else alive_t):
+			continue # Nobody left to throw it at.
 		if m.round_clock < float(_util_cd.get(u, 2.0)):
 			continue
 		var skill := u.data._t("utility")
@@ -1996,6 +2289,54 @@ func _smoked_near(p: Vector2) -> bool:
 
 
 func _t_util(u: Unit) -> Dictionary:
+	if _ai4():
+		var room := _room_util(u)
+		if not room.is_empty():
+			return room
+	return _t_util_base(u)
+
+
+## Walking into a building: flash the room first (or burn out someone we know is in there).
+func _room_util(u: Unit) -> Dictionary:
+	if _room_flashed.has(u) or m.bomb_state == m.Bomb.PLANTED:
+		return {}
+	var mine := arena.building_at(u.global_position)
+	if _has(u, "molotov"):
+		for e in seen_by[u.side]:
+			var s: Dictionary = seen_by[u.side][e]
+			var bn := arena.building_at(s.pos)
+			if bn != "" and bn != mine and m.round_clock - float(s.time) < 4.0 and _can_throw(u, s.pos, "molotov"):
+				_room_flashed[u] = true
+				room_util += 1
+				return {"kind": "molotov", "target": s.pos, "why": "burning them out of the %s" % bn}
+	if not _has(u, "flash"):
+		return {}
+	var rn: String = t_route.get(u, "")
+	if rn == "" or not arena.routes.has(rn):
+		return {}
+	for p in arena.routes[rn].via:
+		if not arena.points.has(p):
+			continue
+		var pp := arena.pt(p)
+		var bn := arena.building_at(pp)
+		if bn == "" or bn == mine:
+			continue
+		var d := u.global_position.distance_to(pp)
+		if d > 650.0:
+			continue
+		var tries: Array[Vector2] = [pp]
+		for door: Vector2 in arena.building_doors(bn):
+			if u.global_position.distance_to(door) < 420.0:
+				tries.append(door + (pp - door).normalized() * 110.0)
+		for tp in tries:
+			if _can_throw(u, tp, "flash"):
+				_room_flashed[u] = true
+				room_util += 1
+				return {"kind": "flash", "target": tp, "why": "flashing the %s before going in" % bn}
+	return {}
+
+
+func _t_util_base(u: Unit) -> Dictionary:
 	if t_phase == "execute" and t_site != "" and m.bomb_state != m.Bomb.PLANTED and m.round_clock - t_execute_at < 25.0:
 		var entry: Vector2 = orders.get(u, {}).get("entry", arena.site_center(t_site))
 		var de := u.global_position.distance_to(entry)
@@ -2046,6 +2387,11 @@ func _ct_util(u: Unit) -> Dictionary:
 				return {"kind": "smoke", "target": e, "why": "smoking the push to buy time"}
 			if _has(u, "frag") and _can_throw(u, tp, "frag"):
 				return {"kind": "frag", "target": tp, "why": "nade on the push"}
+	# Retake: utility on the Ts we know are holding the bomb, not just the bomb.
+	if m.bomb_state == m.Bomb.PLANTED and ct_retake_go and not Game.ab_flag("old_ai3"):
+		var r := _retake_util(u)
+		if not r.is_empty():
+			return r
 	# Retake: flash the site before going in.
 	if m.bomb_state == m.Bomb.PLANTED and ct_retake_go and _has(u, "flash"):
 		var fp: Vector2 = m.bomb_pos
@@ -2056,6 +2402,83 @@ func _ct_util(u: Unit) -> Dictionary:
 		if sp != Vector2.INF and _can_throw(u, sp, "molotov"):
 			return {"kind": "molotov", "target": sp, "why": "molly on a post-plant spot"}
 	return _frag_known(u)
+
+
+## Retake utility on known post-plant Ts: a flash that pops in front of them,
+## a molly on their spot, a smoke on the one covering our way in from afar.
+func _retake_util(u: Unit) -> Dictionary:
+	var known: Array = []
+	for e in seen_by[CT]:
+		if not is_instance_valid(e) or not e.alive:
+			continue
+		var s: Dictionary = seen_by[CT][e]
+		if m.round_clock - float(s.time) > 8.0 or s.get("cleared", false):
+			continue
+		var p: Vector2 = s.pos
+		if p.distance_to(m.bomb_pos) < 900.0:
+			known.append(p)
+	if known.is_empty():
+		return {}
+	known.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.distance_to(u.global_position) < b.distance_to(u.global_position))
+	for p: Vector2 in known:
+		var d := u.global_position.distance_to(p)
+		if _has(u, "flash") and d < 900.0:
+			# Pop it just in front of them (they look at it), not at our own feet.
+			var fp := p + (u.global_position - p).normalized() * 110.0
+			if not m.has_line_of_sight(u.global_position, p) and _can_throw(u, fp, "flash"):
+				return {"kind": "flash", "target": fp, "why": "retake: flashing the T on %s" % arena.threat_at(p)}
+		if _has(u, "molotov") and _can_throw(u, p, "molotov"):
+			return {"kind": "molotov", "target": p, "why": "retake: molly on a post-plant spot"}
+		if _has(u, "smoke") and p.distance_to(m.bomb_pos) > 300.0 and not _smoked_near(p) and _can_throw(u, p, "smoke"):
+			return {"kind": "smoke", "target": p, "why": "retake: smoking off a T crossfire"}
+	return {}
+
+
+## Post-plant: a defuse that would finish is under way, so Ts go and stop it.
+func _update_defuse_push() -> void:
+	var live: bool = m.bomb_state == m.Bomb.PLANTED and m.defuser != null and is_instance_valid(m.defuser) and m.defuser.alive \
+			and m.defuser.action == Unit.Action.DEFUSE and m.defuser.action_timer < m.bomb_timer
+	if live != defuse_push:
+		defuse_push = live
+		if live:
+			for t in _alive(T):
+				if t.global_position.distance_to(m.bomb_pos) < SOUND_RANGE.defuse * 1.6:
+					_say(t, "They're on the bomb! Go go go!")
+					break
+		for t in _alive(T):
+			if not saving.has(t) and not _human(t):
+				orders.erase(t)
+
+
+## The AWPer just got a kill from this spot: move to another angle before they re-peek it.
+func awp_relocate(u: Unit) -> void:
+	if Game.ab_flag("old_ai3") or u.side != CT or ct_state.get(u, "") != "hold" or not ct_home.has(u) or m.bomb_state == m.Bomb.PLANTED:
+		return
+	var home: Dictionary = ct_home[u]
+	var cur: Vector2 = home.pos
+	var options: Array = []
+	if home.site in ["A", "B"]:
+		for h: Array in arena.site_info[home.site].ct_holds:
+			var hp := arena.pt(h[0])
+			if hp.distance_to(cur) > 100.0:
+				options.append({"site": home.site, "pos": hp, "look": arena.pt(h[1])})
+	else:
+		for i in 4:
+			var mp := arena.jittered("mid_hold", rng, 3)
+			if mp.distance_to(cur) > 90.0:
+				options.append({"site": "mid", "pos": mp, "look": arena.pt("mid_center")})
+				break
+	if options.is_empty():
+		return
+	ct_home[u] = options[rng.randi() % options.size()]
+	orders.erase(u)
+	thought[u] = "AWP: new angle after the shot"
+
+
+## Remember where an AWPer died (they won't go back there next round).
+func note_awp_death(u: Unit) -> void:
+	if u.data.role == "AWPer":
+		_awp_died[u.data] = true
 
 
 ## A known enemy just out of sight (behind cover): frag them.
@@ -2244,6 +2667,9 @@ func _where(p: Vector2) -> String:
 	var site := arena.site_at(p)
 	if site != "":
 		return "on " + site
+	var bn := arena.building_at(p)
+	if bn != "" and _ai4():
+		return "in " + bn
 	match arena.threat_at(p):
 		"A":
 			return "near A"

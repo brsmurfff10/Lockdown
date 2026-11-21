@@ -6,6 +6,8 @@ extends Node2D
 ## Holds the tactical map knowledge bots use: points, routes, site positions.
 
 const CELL := 32
+const WINDOW := 2 ## Cell value: an open window. Blocks walking only (you see, shoot and throw through it).
+const WINDOW_LAYER := 4 ## Physics layer for windows (units collide, sight / bullet / grenade rays don't).
 
 const FLOOR_COLOR := Color(0.17, 0.18, 0.20)
 const GRID_COLOR := Color(1, 1, 1, 0.03)
@@ -35,6 +37,12 @@ var site_info := {}
 var site_angles := {} ## site -> Array[Vector2]: spots a defender could hold that Ts can't see from the entrances.
 var _floor_rects: Array = []
 var _cover_rects: Array = []
+## Walk-through buildings: {name, rect (outer walls), doors, walls (inner),
+## windows, props (furniture), floor}. The rect's edge is the outer wall; the
+## inside is carved out, then inner walls, furniture, doors and open windows go in.
+var buildings: Array = []
+var gates: Array = [] ## Metal gates (Rect2i): solid, block sight; staggered to break long spawn sightlines.
+var barricades: Array = [] ## Wrecked cars (Rect2i) blocking a lane off completely.
 ## Rendered 3D art for the map (assets/maps/<name>.png, 32 px per cell, made
 ## with art/blender/build_map.py). Without it the map is drawn as flat cells.
 var art_texture: Texture2D = null
@@ -51,9 +59,24 @@ func load_map(d: Dictionary) -> void:
 	spawns = d.spawns
 	points = d.points
 	routes = d.routes
+	if Game.ab_flag("no_buildings"):
+		# The old layout for comparisons: no building routes (the art still shows them).
+		routes = {}
+		for rn: String in d.routes:
+			var via: Array = d.routes[rn].via
+			var ok := true
+			for b: Dictionary in d.get("buildings", []):
+				for p in via + [d.routes[rn].stage, d.routes[rn].entry]:
+					if d.points.has(p) and (b.rect as Rect2i).grow(-1).has_point(d.points[p]):
+						ok = false
+			if ok:
+				routes[rn] = d.routes[rn]
 	site_info = d.site_info
 	_floor_rects = d.floors
 	_cover_rects = d.cover
+	buildings = d.get("buildings", []) if not Game.ab_flag("no_buildings") else []
+	gates = d.get("gates", []) if not Game.ab_flag("no_buildings") else []
+	barricades = d.get("barricades", []) if not Game.ab_flag("no_buildings") else []
 	var art := "res://assets/maps/%s.png" % map_name.to_lower()
 	art_texture = load(art) if ResourceLoader.exists(art) else null
 
@@ -71,9 +94,23 @@ func _build() -> void:
 		_set_rect(r, 0)
 	for r: Rect2i in _cover_rects:
 		_set_rect(r, 1)
+	for b: Dictionary in buildings:
+		_set_rect((b.rect as Rect2i).grow(-1), 0)
+		for r: Rect2i in b.get("walls", []):
+			_set_rect(r, 1)
+		for r: Rect2i in b.get("props", []):
+			_set_rect(r, 1)
+		for r: Rect2i in b.get("doors", []):
+			_set_rect(r, 0)
+		for r: Rect2i in b.get("windows", []):
+			_set_rect(r, WINDOW)
+	for r: Rect2i in gates + barricades:
+		_set_rect(r, 1)
 	_build_collision()
 	_build_astar()
 	_compute_threat()
+	_add_window_holds()
+	_compute_glance_spots()
 	_compute_site_angles()
 	queue_redraw()
 
@@ -84,10 +121,90 @@ func _set_rect(r: Rect2i, value: int) -> void:
 			solid[y * W + x] = value
 
 
+## Can't walk here (walls, cover, glass).
 func is_solid(c: Vector2i) -> bool:
 	if c.x < 0 or c.y < 0 or c.x >= W or c.y >= H:
 		return true
+	return solid[c.y * W + c.x] != 0
+
+
+## Blocks sight (walls and cover; open windows don't).
+func is_opaque(c: Vector2i) -> bool:
+	if c.x < 0 or c.y < 0 or c.x >= W or c.y >= H:
+		return true
 	return solid[c.y * W + c.x] == 1
+
+
+func is_window(c: Vector2i) -> bool:
+	return c.x >= 0 and c.y >= 0 and c.x < W and c.y < H and solid[c.y * W + c.x] == WINDOW
+
+
+## Door centres of a building (where you walk in).
+func building_doors(bname: String) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for b: Dictionary in buildings:
+		if String(b.name) == bname:
+			for r: Rect2i in b.get("doors", []):
+				out.append((Vector2(r.position) + Vector2(r.size) / 2.0) * CELL)
+	return out
+
+
+## Spots worth a glance when walking near / through a building: doorways and the
+## corners just inside them.
+var glance_spots: Array[Vector2] = []
+
+
+func _compute_glance_spots() -> void:
+	glance_spots.clear()
+	for b: Dictionary in buildings:
+		var inner := (b.rect as Rect2i).grow(-1)
+		for r: Rect2i in b.get("doors", []):
+			glance_spots.append((Vector2(r.position) + Vector2(r.size) / 2.0) * CELL)
+		for c: Vector2i in [inner.position, Vector2i(inner.end.x - 1, inner.position.y), Vector2i(inner.position.x, inner.end.y - 1), inner.end - Vector2i.ONE]:
+			if not is_solid(c):
+				glance_spots.append(cell_center(c))
+
+
+## CT holds at a window: an inside spot next to a window that sees a site
+## entrance and is on the CT side of the map. Added to that site's ct_holds.
+func _add_window_holds() -> void:
+	if Game.ab_flag("old_ai4") or Game.ab_flag("no_winholds") or buildings.is_empty():
+		return
+	var dct := _distance_field(_spawn_cells(1))
+	var dt := _distance_field(_spawn_cells(0))
+	for b: Dictionary in buildings:
+		var inner := (b.rect as Rect2i).grow(-1)
+		var used := {}
+		for r: Rect2i in b.get("windows", []):
+			var mid := r.position + r.size / 2
+			for dv: Vector2i in [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]:
+				var c := mid + dv
+				if is_solid(c) or not inner.has_point(c):
+					continue
+				var i := c.y * W + c.x
+				if dct[i] >= dt[i]:
+					continue # Closer to the Ts: not a CT spot.
+				for site: String in site_info:
+					if used.has(site):
+						continue
+					for rn: String in routes:
+						var route: Dictionary = routes[rn]
+						if route.get("site", "") != site or String(route.get("entry", "")) == "":
+							continue
+						var e: Vector2i = points[route.entry]
+						if _los_cells(c, e) and Vector2(c - e).length() < 40.0:
+							(site_info[site].ct_holds as Array).append([c, route.entry])
+							used[site] = true
+							break
+
+
+## Name of the building a position is inside, or "".
+func building_at(p: Vector2) -> String:
+	var c := world_to_cell(p)
+	for b: Dictionary in buildings:
+		if (b.rect as Rect2i).grow(-1).has_point(c) and not is_solid(c):
+			return String(b.name)
+	return ""
 
 
 ## One rectangle shape (and light occluder) per horizontal run of wall cells
@@ -97,14 +214,29 @@ func _build_collision() -> void:
 	body.collision_layer = 1
 	body.collision_mask = 0
 	add_child(body)
+	var glass := StaticBody2D.new()
+	glass.collision_layer = WINDOW_LAYER
+	glass.collision_mask = 0
+	add_child(glass)
 	for y in H:
 		var x := 0
 		while x < W:
-			if not (is_solid(Vector2i(x, y)) and _touches_floor(Vector2i(x, y))):
+			if is_window(Vector2i(x, y)):
+				var gs := x
+				while x < W and is_window(Vector2i(x, y)):
+					x += 1
+				var gshape := RectangleShape2D.new()
+				gshape.size = Vector2((x - gs) * CELL, CELL)
+				var gcs := CollisionShape2D.new()
+				gcs.shape = gshape
+				gcs.position = Vector2((gs + (x - gs) / 2.0) * CELL, (y + 0.5) * CELL)
+				glass.add_child(gcs)
+				continue
+			if not (is_opaque(Vector2i(x, y)) and _touches_floor(Vector2i(x, y))):
 				x += 1
 				continue
 			var start := x
-			while x < W and is_solid(Vector2i(x, y)) and _touches_floor(Vector2i(x, y)):
+			while x < W and is_opaque(Vector2i(x, y)) and _touches_floor(Vector2i(x, y)):
 				x += 1
 			var shape := RectangleShape2D.new()
 			shape.size = Vector2((x - start) * CELL, CELL)
@@ -466,7 +598,7 @@ func _los_cells(a: Vector2i, b: Vector2i) -> bool:
 	var steps := int(pa.distance_to(pb) / 8.0) + 1
 	for i in steps + 1:
 		var p := pa.lerp(pb, float(i) / steps)
-		if is_solid(world_to_cell(p)):
+		if is_opaque(world_to_cell(p)):
 			return false
 	return true
 
@@ -508,7 +640,11 @@ func _draw() -> void:
 	for y in H:
 		for x in W:
 			var c := Vector2i(x, y)
-			if is_solid(c) and _touches_floor(c):
+			if is_window(c):
+				var r := Rect2(x * CELL, y * CELL, CELL, CELL)
+				draw_rect(r, WALL_EDGE)
+				draw_rect(r.grow(-6), FLOOR_COLOR) # Open window: a gap in the wall with a sill.
+			elif is_solid(c) and _touches_floor(c):
 				var r := Rect2(x * CELL, y * CELL, CELL, CELL)
 				draw_rect(r, WALL_EDGE)
 				draw_rect(r.grow(-2), WALL_COLOR)

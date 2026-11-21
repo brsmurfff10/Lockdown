@@ -9,7 +9,8 @@ func _physics_process(_delta: float) -> void:
 	if not unit.alive:
 		return
 	var mouse := unit.get_global_mouse_position()
-	if mouse.distance_to(unit.global_position) > 1.0:
+	unit.aim_reach = mouse.distance_to(unit.global_position)
+	if unit.aim_reach > 1.0:
 		unit.aim_dir = (mouse - unit.global_position).normalized()
 
 	unit.auto_scope = false
@@ -48,6 +49,8 @@ func _physics_process(_delta: float) -> void:
 		unit.cancel_action()
 
 	unit.move_input = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if Input.is_action_pressed("walk"):
+		unit.move_input *= Unit.WALK_MULT # Walk: half speed, silent.
 	if unit.action != Unit.Action.NONE and unit.move_input != Vector2.ZERO:
 		unit.cancel_action()
 

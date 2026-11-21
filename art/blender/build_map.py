@@ -1,7 +1,7 @@
 """Lockdown map builder for Blender (5.x).
 
 Builds a 3D version of a grid map from art/maps/<name>.json (made by
-art/export_map.py) in its own scene, then renders it straight down with an
+tests/export_maps.tscn, buildings included) in its own scene, then renders it straight down with an
 orthographic camera at 32 px per cell, so the image lines up 1:1 with the
 game's collision grid (Arena.CELL = 32).
 
@@ -776,6 +776,253 @@ def _pipes(coll, x0, x1, yc, z, i, vertical=False):
         _mesh_obj("Pipes_%d" % i, coll, b, steel, (x0 + length / 2, -yc, 0))
 
 
+# --- Foundry props (varied: a big-footprint set and a small one, cycled) -------
+
+def _hazard():
+    return _simple_mat("LD_Hazard", (0.6, 0.4, 0.02), 0.1, 0.6, ((0.015, 0.015, 0.015), 2.5, "DIAGONAL"))
+
+
+def _steel():
+    return _simple_mat("LD_Steel", (0.32, 0.33, 0.34), 0.85, 0.32)
+
+
+def _press(coll, rng, x, y, w, h, i):
+    """Hydraulic press: base plate, two columns, crown, ram and a hazard skirt."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 1.0)
+    L, Wd = lng - 0.25, sht - 0.25
+    frame = _simple_mat("LD_PressFrame", (0.05, 0.12, 0.2), 0.5, 0.45)
+
+    def body(bm):
+        _cube(bm, L, Wd, 0.35, 0, 0, 0.175)
+        for sx in (-1, 1):
+            _cube(bm, 0.35, Wd * 0.7, 2.1, sx * (L / 2 - 0.25), 0, 1.4)
+        _cube(bm, L, Wd * 0.8, 0.45, 0, 0, 2.5)
+    _mesh_obj("Press_%d" % i, coll, body, frame, (cx, cy, 0), rot, 0.04)
+    _mesh_obj("Press_%d_ram" % i, coll, lambda bm: (_cyl(bm, Wd * 0.22, 0.9, 0, 0, 1.85, 20), _cube(bm, L * 0.55, Wd * 0.55, 0.15, 0, 0, 1.35)), _steel(), (cx, cy, 0), rot, 0.02)
+    _mesh_obj("Press_%d_haz" % i, coll, lambda bm: _cube(bm, L * 0.6, Wd * 0.6, 0.06, 0, 0, 0.38), _hazard(), (cx, cy, 0), rot)
+
+
+def _conveyor(coll, rng, x, y, w, h, i):
+    """Conveyor section on legs with crates riding on the belt."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 1.0)
+    L, Wd = lng - 0.15, min(sht - 0.3, 0.9)
+    belt = _simple_mat("LD_Belt", (0.02, 0.02, 0.02), 0.0, 0.85, ((0.05, 0.05, 0.05), 9.0, "X"))
+    frame = _simple_mat("LD_ConvFrame", (0.35, 0.28, 0.05), 0.4, 0.5)
+
+    def legs(bm):
+        _cube(bm, L, Wd + 0.12, 0.18, 0, 0, 0.82)
+        for t in range(int(L) + 1):
+            for sy in (-1, 1):
+                _cube(bm, 0.08, 0.08, 0.8, -L / 2 + 0.1 + t * (L - 0.2) / max(1, int(L)), sy * Wd / 2, 0.4)
+        for sx in (-1, 1):
+            _cyl(bm, 0.14, Wd + 0.1, sx * L / 2, 0, 0.88, 12, "Y")
+    _mesh_obj("Conv_%d_frame" % i, coll, legs, frame, (cx, cy, 0), rot, 0.01)
+    _mesh_obj("Conv_%d_belt" % i, coll, lambda bm: _cube(bm, L - 0.1, Wd, 0.04, 0, 0, 0.93), belt, (cx, cy, 0), rot)
+    boxes = rng.randint(1, 3)
+
+    def cargo(bm):
+        for k in range(boxes):
+            s = rng.uniform(0.35, 0.55)
+            _cube(bm, s, s, s, -L / 2 + (k + 0.6) * L / (boxes + 0.4), rng.uniform(-0.1, 0.1), 0.95 + s / 2)
+    _mesh_obj("Conv_%d_cargo" % i, coll, cargo, _simple_mat("LD_Cardboard", (0.32, 0.2, 0.09), 0.0, 0.8), (cx, cy, 0), rot, 0.02)
+
+
+def _forklift(coll, rng, x, y, w, h, i):
+    """Yellow forklift: body, counterweight, overhead guard, mast and forks with a pallet."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 6.0)
+    L, Wd = lng - 0.3, min(sht - 0.3, 1.2)
+    paint = _simple_mat("LD_Forklift", (0.65, 0.42, 0.02), 0.2, 0.45)
+    dark = _simple_mat("LD_Tyre", (0.015, 0.015, 0.015), 0.0, 0.9)
+    _mesh_obj("Fork_%d_body" % i, coll, lambda bm: (_cube(bm, L * 0.6, Wd, 0.7, -L * 0.1, 0, 0.6), _cube(bm, L * 0.2, Wd, 0.9, -L * 0.33, 0, 0.75)), paint, (cx, cy, 0), rot, 0.08)
+
+    def guard(bm):
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                _cube(bm, 0.06, 0.06, 1.0, -L * 0.1 + sx * L * 0.18, sy * Wd * 0.42, 1.45)
+        _cube(bm, L * 0.42, Wd * 0.9, 0.05, -L * 0.1, 0, 1.95)
+        _cube(bm, 0.12, Wd * 0.7, 2.0, L * 0.24, 0, 1.0)  # mast
+        for sy in (-1, 1):
+            _cube(bm, L * 0.3, 0.1, 0.05, L * 0.38, sy * Wd * 0.22, 0.12)  # forks
+    _mesh_obj("Fork_%d_guard" % i, coll, guard, dark, (cx, cy, 0), rot)
+
+    def wheels(bm):
+        for sx in (-0.3, 0.15):
+            for sy in (-1, 1):
+                _cyl(bm, 0.25, 0.18, L * sx, sy * Wd * 0.5, 0.25, 14, "Y")
+    _mesh_obj("Fork_%d_wheels" % i, coll, wheels, dark, (cx, cy, 0), rot)
+    _mesh_obj("Fork_%d_pallet" % i, coll, lambda bm: _cube(bm, L * 0.3, Wd * 0.8, 0.12, L * 0.38, 0, 0.22), _simple_mat("LD_Pallet", (0.24, 0.15, 0.07), 0.0, 0.8), (cx, cy, 0), rot)
+
+
+def _beams(coll, rng, x, y, w, h, i):
+    """A stack of I-beams on timber bearers."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 2.0)
+    L, Wd = lng - 0.2, sht - 0.25
+    rust = _simple_mat("LD_Beam", (0.16, 0.07, 0.035), 0.6, 0.6)
+    n = max(2, int(Wd / 0.42))
+
+    def b(bm):
+        for layer in range(2 if rng.random() < 0.6 else 3):
+            for k in range(n - (layer % 2)):
+                yy = -Wd / 2 + 0.21 + k * (Wd - 0.42) / max(1, n - 1) + (0.2 if layer % 2 else 0.0)
+                z0 = 0.18 + layer * 0.36
+                _cube(bm, L, 0.34, 0.05, 0, yy, z0 + 0.025)
+                _cube(bm, L, 0.06, 0.26, 0, yy, z0 + 0.18)
+                _cube(bm, L, 0.34, 0.05, 0, yy, z0 + 0.335)
+    _mesh_obj("Beams_%d" % i, coll, b, rust, (cx, cy, 0), rot)
+    _mesh_obj("Beams_%d_wood" % i, coll, lambda bm: [_cube(bm, 0.2, Wd, 0.16, sx * L * 0.35, 0, 0.08) for sx in (-1, 1)], _simple_mat("LD_Pallet", (0.24, 0.15, 0.07), 0.0, 0.8), (cx, cy, 0), rot)
+
+
+def _crucible(coll, rng, x, y, w, h, i):
+    """Ladle of molten steel on a cradle: the glowing heart of the foundry."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 0.0)
+    r = min(sht, lng) / 2 - 0.2
+    shell = _simple_mat("LD_Ladle", (0.09, 0.08, 0.075), 0.6, 0.55)
+    glow = _emit_mat("LD_Molten", (1.0, 0.35, 0.03), 4.0)
+    _mesh_obj("Ladle_%d_cradle" % i, coll, lambda bm: [_cube(bm, 0.18, r * 2.3, 1.3, sx * (r + 0.05), 0, 0.65) for sx in (-1, 1)], _steel(), (cx, cy, 0), rot)
+    _mesh_obj("Ladle_%d" % i, coll, lambda bm: (_cyl(bm, r, 1.1, 0, 0, 0.75, 28), _cyl(bm, r * 1.07, 0.12, 0, 0, 1.3, 28)), shell, (cx, cy, 0), rot, 0.04)
+    _mesh_obj("Ladle_%d_melt" % i, coll, lambda bm: _cyl(bm, r * 0.86, 0.03, 0, 0, 1.33, 28), glow, (cx, cy, 0), rot)
+
+
+def _ingots(coll, rng, x, y, w, h, i):
+    """Pallet of stacked steel ingots."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 4.0)
+    L, Wd = lng - 0.2, sht - 0.2
+    bar = _simple_mat("LD_Ingot", (0.55, 0.56, 0.58), 0.9, 0.25)
+    _mesh_obj("Ingot_%d_pallet" % i, coll, lambda bm: _cube(bm, L, Wd, 0.15, 0, 0, 0.075), _simple_mat("LD_Pallet", (0.24, 0.15, 0.07), 0.0, 0.8), (cx, cy, 0), rot, 0.01)
+    layers = rng.randint(3, 5)
+
+    def b(bm):
+        for lyr in range(layers):
+            along = lyr % 2 == 0
+            cnt = 5 if along else 4
+            for k in range(cnt):
+                if along:
+                    _cube(bm, L * 0.9, Wd / cnt * 0.8, 0.14, 0, -Wd / 2 + (k + 0.5) * Wd / cnt, 0.22 + lyr * 0.15)
+                else:
+                    _cube(bm, L / cnt * 0.8, Wd * 0.9, 0.14, -L / 2 + (k + 0.5) * L / cnt, 0, 0.22 + lyr * 0.15)
+    _mesh_obj("Ingot_%d" % i, coll, b, bar, (cx, cy, 0), rot, 0.015)
+
+
+def _cylinders(coll, rng, x, y, w, h, i):
+    """Rack of gas cylinders (oxygen green, acetylene red, argon blue)."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 2.0)
+    L, Wd = lng - 0.2, sht - 0.25
+    cols = [(0.05, 0.25, 0.08), (0.45, 0.05, 0.03), (0.05, 0.12, 0.35), (0.4, 0.4, 0.38)]
+    nx = max(2, int(L / 0.38))
+    ny = 2 if Wd > 0.6 else 1
+    for k in range(nx * ny):
+        col = cols[(k + i) % len(cols)]
+        px = -L / 2 + 0.19 + (k % nx) * (L - 0.38) / max(1, nx - 1)
+        py = 0.0 if ny == 1 else (-0.2 if k // nx == 0 else 0.2)
+        _mesh_obj("Gas_%d_%d" % (i, k), coll, lambda bm, px=px, py=py: (_cyl(bm, 0.15, 1.3, px, py, 0.65, 14), _cyl(bm, 0.06, 0.15, px, py, 1.37, 8)),
+                  _simple_mat("LD_Gas_%d" % ((k + i) % len(cols)), col, 0.3, 0.4), (cx, cy, 0), rot)
+    _mesh_obj("Gas_%d_cage" % i, coll, lambda bm: [_cube(bm, L, 0.05, 0.06, 0, sy * Wd / 2, z) for sy in (-1, 1) for z in (0.4, 1.0)] + [_cube(bm, 0.06, Wd, 1.1, sx * L / 2, 0, 0.55) for sx in (-1, 1)], _steel(), (cx, cy, 0), rot)
+
+
+def _cabinet(coll, rng, x, y, w, h, i):
+    """Electrical cabinet: grey steel, vents and a row of status lights."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 0.0)
+    L, Wd = lng - 0.2, min(sht - 0.3, 0.7)
+    body = _simple_mat("LD_Cabinet_E", (0.2, 0.22, 0.22), 0.5, 0.45)
+    _mesh_obj("ECab_%d" % i, coll, lambda bm: _cube(bm, L, Wd, 1.9, 0, 0, 0.95), body, (cx, cy, 0), rot, 0.02)
+    _mesh_obj("ECab_%d_vents" % i, coll, lambda bm: [_cube(bm, L * 0.8, 0.08, 0.02, 0, -Wd * 0.25 + k * Wd * 0.17, 1.91) for k in range(4)], _simple_mat("LD_Soot", (0.015, 0.012, 0.01), 0.0, 0.9), (cx, cy, 0), rot)
+    for k, col in enumerate([(0.1, 1.0, 0.2), (1.0, 0.6, 0.05), (1.0, 0.1, 0.05)]):
+        _mesh_obj("ECab_%d_led%d" % (i, k), coll, lambda bm, k=k: _cube(bm, 0.12, 0.12, 0.04, -L * 0.3 + k * 0.2, Wd * 0.3, 1.93),
+                  _emit_mat("LD_Led_%d" % k, col, 3.0), (cx, cy, 0), rot)
+
+
+def _workbench(coll, rng, x, y, w, h, i):
+    """Workbench: steel top on legs, a vise, a toolbox and offcuts."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 2.0)
+    L, Wd = lng - 0.2, min(sht - 0.25, 0.9)
+    _mesh_obj("Bench_%d" % i, coll, lambda bm: (_cube(bm, L, Wd, 0.08, 0, 0, 0.9), [_cube(bm, 0.08, 0.08, 0.86, sx * (L / 2 - 0.08), sy * (Wd / 2 - 0.08), 0.43) for sx in (-1, 1) for sy in (-1, 1)], _cube(bm, L * 0.9, Wd * 0.8, 0.04, 0, 0, 0.25)),
+              _steel(), (cx, cy, 0), rot, 0.01)
+    _mesh_obj("Bench_%d_vise" % i, coll, lambda bm: (_cube(bm, 0.3, 0.2, 0.2, -L * 0.35, Wd * 0.3, 1.04), _cube(bm, 0.06, 0.4, 0.06, -L * 0.35, Wd * 0.3, 1.12)), _simple_mat("LD_Vise", (0.05, 0.15, 0.3), 0.6, 0.4), (cx, cy, 0), rot)
+    _mesh_obj("Bench_%d_box" % i, coll, lambda bm: _cube(bm, 0.5, 0.25, 0.22, L * 0.2, -Wd * 0.15, 1.05), _simple_mat("LD_ToolRed", (0.5, 0.04, 0.02), 0.3, 0.4), (cx, cy, 0), rot, 0.02)
+
+
+def _toolchest(coll, rng, x, y, w, h, i):
+    """Red rolling tool chest with drawers."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 3.0)
+    L, Wd = min(lng - 0.25, 1.4), min(sht - 0.3, 0.6)
+    red = _simple_mat("LD_ToolRed", (0.5, 0.04, 0.02), 0.3, 0.4)
+    _mesh_obj("Chest_%d" % i, coll, lambda bm: _cube(bm, L, Wd, 1.1, 0, 0, 0.6), red, (cx, cy, 0), rot, 0.03)
+    _mesh_obj("Chest_%d_handles" % i, coll, lambda bm: [_cube(bm, L * 0.7, 0.04, 0.03, 0, Wd / 2 + 0.02, 0.3 + k * 0.2) for k in range(4)] + [_cube(bm, L, Wd, 0.03, 0, 0, 1.165)], _steel(), (cx, cy, 0), rot)
+
+
+def _lockers(coll, rng, x, y, w, h, i):
+    """A row of narrow steel lockers, one door left open."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 0.0)
+    L, Wd = lng - 0.15, min(sht - 0.35, 0.55)
+    n = max(2, int(L / 0.42))
+    cols = [(0.12, 0.2, 0.28), (0.25, 0.27, 0.27)]
+    body = _simple_mat("LD_Locker_%d" % (i % 2), cols[i % 2], 0.5, 0.45)
+
+    def b(bm):
+        for k in range(n):
+            _cube(bm, L / n - 0.03, Wd, 1.85, -L / 2 + (k + 0.5) * L / n, 0, 0.925)
+    _mesh_obj("Lockers_%d" % i, coll, b, body, (cx, cy, 0), rot, 0.015)
+    _mesh_obj("Lockers_%d_door" % i, coll, lambda bm: _cube(bm, 0.04, L / n * 0.9, 1.7, -L / 2 + L / n, Wd / 2 + L / n * 0.4, 0.9), body, (cx, cy, 0), rot)
+
+
+def _piperack(coll, rng, x, y, w, h, i):
+    """Pipes and conduit stacked on a steel rack."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 2.0)
+    L, Wd = lng - 0.15, min(sht - 0.2, 0.8)
+    pipe = _simple_mat("LD_PipeRack", (0.3, 0.3, 0.28), 0.8, 0.35)
+
+    def b(bm):
+        for sx in (-1, 1):
+            _cube(bm, 0.08, Wd, 1.3, sx * (L / 2 - 0.1), 0, 0.65)
+            for z in (0.5, 1.0):
+                _cube(bm, 0.1, Wd, 0.06, sx * (L / 2 - 0.1), 0, z)
+    _mesh_obj("PRack_%d" % i, coll, b, _steel(), (cx, cy, 0), rot, 0.01)
+
+    def pipes(bm):
+        for z in (0.6, 1.1):
+            for k in range(3):
+                _cyl(bm, 0.09 + 0.03 * (k % 2), L, 0, -Wd / 3 + k * Wd / 3, z, 12, "X")
+    _mesh_obj("PRack_%d_pipes" % i, coll, pipes, pipe, (cx, cy, 0), rot)
+
+
+def _welder(coll, rng, x, y, w, h, i):
+    """Welding cart with a gas bottle and a glowing arc on the bench next to it."""
+    cx, cy, lng, sht, rot = _footprint(rng, x, y, w, h, 4.0)
+    L, Wd = lng - 0.25, min(sht - 0.3, 0.7)
+    cart = _simple_mat("LD_Welder", (0.05, 0.18, 0.32), 0.4, 0.45)
+    _mesh_obj("Weld_%d_cart" % i, coll, lambda bm: (_cube(bm, L * 0.45, Wd, 0.8, -L * 0.25, 0, 0.45), _cyl(bm, 0.14, 1.2, -L * 0.25, -Wd * 0.25, 0.6, 12)), cart, (cx, cy, 0), rot, 0.03)
+    _mesh_obj("Weld_%d_table" % i, coll, lambda bm: (_cube(bm, L * 0.45, Wd, 0.06, L * 0.25, 0, 0.85), [_cube(bm, 0.06, 0.06, 0.82, L * 0.25 + sx * L * 0.18, sy * Wd * 0.4, 0.41) for sx in (-1, 1) for sy in (-1, 1)]), _steel(), (cx, cy, 0), rot)
+    _mesh_obj("Weld_%d_arc" % i, coll, lambda bm: _cube(bm, 0.14, 0.14, 0.04, L * 0.25, 0, 0.9), _emit_mat("LD_Arc", (0.55, 0.8, 1.0), 8.0), (cx, cy, 0), rot)
+
+
+BIG_PROPS = ["machine", "press", "conveyor", "beams", "forklift", "crucible"]
+SMALL_PROPS = ["ingots", "cylinders", "crucible", "crate", "workbench", "spool", "cabinet", "welder", "toolchest", "piperack", "barrels", "lockers"]
+THIN_PROPS = ["cabinet", "piperack", "cylinders", "lockers", "toolchest", "welder", "workbench", "barrels"]
+_PROP_FNS = {"machine": lambda *a: _machine(*a), "press": _press, "conveyor": _conveyor, "beams": _beams, "forklift": _forklift,
+             "crucible": _crucible, "ingots": _ingots, "cylinders": _cylinders, "crate": lambda *a: _steel_crate(*a),
+             "workbench": _workbench, "cabinet": _cabinet, "toolchest": _toolchest, "lockers": _lockers,
+             "piperack": _piperack, "welder": _welder}
+_prop_turn = {}
+
+
+def _industrial(coll, mats, rng, x, y, w, h, i):
+    """Pick the next prop for this footprint size, cycling so neighbours differ."""
+    lng, sht = max(w, h), min(w, h)
+    pool = BIG_PROPS if lng >= 3 else (THIN_PROPS if sht == 1 else SMALL_PROPS)
+    key = id(pool)
+    k = _prop_turn.get(key, rng.randrange(len(pool)))
+    _prop_turn[key] = k + 1
+    kind = pool[k % len(pool)]
+    if kind == "barrels":
+        for yy in range(y, y + h):
+            for xx in range(x, x + w):
+                _barrel(coll, mats, rng, xx + 0.5, -(yy + 0.5), i * 10 + (xx - x) + (yy - y) * 3)
+    elif kind == "spool":
+        _spool(coll, rng, x + w / 2, -(y + h / 2), min(w, h) / 2 - 0.08, 900 + i)
+    else:
+        _PROP_FNS[kind](coll, rng, x, y, w, h, i)
+
+
 # --- Cage --------------------------------------------------------------------
 
 def _jersey(coll, rng, x, y, w, h, i):
@@ -824,6 +1071,92 @@ def _sandbags(coll, rng, x, y, w, h, i):
     _mesh_obj("Sandbags_%d" % i, coll, bags, m, (x, -y, 0))
 
 
+# Building interiors: floor finish per kind.
+FLOORS = {
+    "wood": ((0.16, 0.085, 0.04), (0.11, 0.055, 0.025), 7.0),
+    "tiles": ((0.2, 0.19, 0.17), (0.12, 0.115, 0.1), 2.0),
+    "plate": ((0.11, 0.115, 0.12), (0.075, 0.08, 0.085), 1.0),
+}
+
+
+def _floor_mat(kind):
+    a, b, scale = FLOORS.get(kind, FLOORS["wood"])
+    name = "LD_Floor_" + kind
+    if bpy.data.materials.get(name):
+        return bpy.data.materials[name]
+
+    def bld(nt, bsdf):
+        co = _coord(nt)
+        if kind == "wood":
+            wv = nt.nodes.new("ShaderNodeTexWave")  # Planks.
+            wv.wave_type = "BANDS"
+            wv.bands_direction = "Y"
+            wv.inputs["Scale"].default_value = scale
+            wv.inputs["Distortion"].default_value = 1.5
+            nt.links.new(co, wv.inputs["Vector"])
+            fac = wv.outputs["Fac"]
+        else:
+            ck = nt.nodes.new("ShaderNodeTexChecker")  # Tiles / deck plates.
+            ck.inputs["Scale"].default_value = scale
+            nt.links.new(co, ck.inputs["Vector"])
+            fac = ck.outputs["Fac"]
+        r = nt.nodes.new("ShaderNodeValToRGB")
+        r.color_ramp.elements[0].color = (*b, 1)
+        r.color_ramp.elements[1].color = (*a, 1)
+        nt.links.new(fac, r.inputs[0])
+        nt.links.new(r.outputs[0], bsdf.inputs["Base Color"])
+        bsdf.inputs["Roughness"].default_value = 0.45 if kind != "plate" else 0.35
+        bsdf.inputs["Metallic"].default_value = 0.6 if kind == "plate" else 0.0
+    return _mat(name, bld)
+
+
+def _furniture(coll, rng, style, x, y, w, h, i):
+    """Furniture filling one prop footprint inside a building."""
+    if style == "industrial":
+        _industrial(coll, None, rng, x, y, w, h, 500 + i)
+        return
+    if max(w, h) >= 5:
+        # A boat up on a trailer (boat sheds): white hull, red stripe, a small cabin.
+        vert = h > w
+        L, Wd = max(w, h) - 0.3, min(w, h) - 0.4
+        cx, cy = x + w / 2, -(y + h / 2)
+        rot = math.radians(90) if vert else 0.0
+        hull = _simple_mat("LD_Hull", (0.75, 0.75, 0.72), 0.0, 0.4)
+        stripe = _simple_mat("LD_HullStripe", (0.5, 0.06, 0.03), 0.0, 0.5)
+        trailer = _simple_mat("LD_Trailer", (0.1, 0.1, 0.11), 0.7, 0.4)
+
+        def hull_fn(bm):
+            pts = [(-L / 2, -Wd / 2), (L * 0.25, -Wd / 2), (L / 2, 0.0), (L * 0.25, Wd / 2), (-L / 2, Wd / 2)]
+            _prism(bm, pts, 0.35, 1.05)
+        _mesh_obj("Boat_%d_trailer" % i, coll, lambda bm: _cube(bm, L * 0.9, Wd * 0.7, 0.3, 0, 0, 0.15), trailer, (cx, cy, 0), rot, 0.02)
+        _mesh_obj("Boat_%d_hull" % i, coll, hull_fn, hull, (cx, cy, 0), rot, 0.05)
+        _mesh_obj("Boat_%d_stripe" % i, coll, lambda bm: _cube(bm, L * 0.7, Wd * 1.01, 0.08, -L * 0.1, 0, 0.8), stripe, (cx, cy, 0), rot)
+        _mesh_obj("Boat_%d_cabin" % i, coll, lambda bm: _cube(bm, L * 0.25, Wd * 0.6, 0.45, -L * 0.15, 0, 1.28), hull, (cx, cy, 0), rot, 0.06)
+        return
+    kind = rng.choice(["table", "shelf", "couch"]) if w * h > 1 else rng.choice(["shelf", "cabinet"])
+    x0, y0, x1, y1 = x + 0.08, -(y + h) + 0.08, x + w - 0.08, -y - 0.08
+    if kind == "table":
+        _box_mesh("Table_%d" % i, [(x0, y0, x1, y1, 0.0, 0.75)], coll, _simple_mat("LD_Table", (0.2, 0.11, 0.05), 0.0, 0.5), bevel=0.04)
+        _box_mesh("Cloth_%d" % i, [(x0 + 0.15, y0 + 0.15, x1 - 0.15, y1 - 0.15, 0.75, 0.77)], coll,
+                  _simple_mat("LD_Cloth", (0.25, 0.22, 0.17), 0.0, 0.9))
+    elif kind == "shelf":
+        _box_mesh("Shelf_%d" % i, [(x0, y0, x1, y1, 0.0, 1.5)], coll, _simple_mat("LD_Shelf", (0.09, 0.07, 0.05), 0.0, 0.6), bevel=0.03)
+        boxes = []
+        for k in range(int(max(w, h)) * 2):
+            bx = x0 + 0.1 + rng.random() * max(0.1, (x1 - x0) - 0.45)
+            by = y0 + 0.1 + rng.random() * max(0.1, (y1 - y0) - 0.45)
+            boxes.append((bx, by, bx + 0.3, by + 0.3, 1.5, 1.5 + rng.choice([0.15, 0.25])))
+        _box_mesh("Goods_%d" % i, boxes, coll, _simple_mat("LD_Goods", (0.3, 0.24, 0.14), 0.0, 0.8))
+    elif kind == "couch":
+        _box_mesh("Couch_%d" % i, [(x0, y0, x1, y1, 0.0, 0.5)], coll, _simple_mat("LD_Couch", (0.12, 0.16, 0.2), 0.0, 0.9), bevel=0.1)
+        if w >= h:
+            _box_mesh("CouchBack_%d" % i, [(x0, y1 - 0.3, x1, y1, 0.5, 0.85)], coll, _simple_mat("LD_Couch", (0.12, 0.16, 0.2), 0.0, 0.9), bevel=0.08)
+        else:
+            _box_mesh("CouchBack_%d" % i, [(x0, y0, x0 + 0.3, y1, 0.5, 0.85)], coll, _simple_mat("LD_Couch", (0.12, 0.16, 0.2), 0.0, 0.9), bevel=0.08)
+    else:
+        _box_mesh("Cabinet_%d" % i, [(x0, y0, x1, y1, 0.0, 1.1)], coll, _simple_mat("LD_Cabinet", (0.22, 0.2, 0.17), 0.3, 0.5), bevel=0.03)
+
+
 def build(project, map_name):
     d = json.load(open(os.path.join(project, "art", "maps", map_name + ".json"), encoding="utf-8"))
     th = THEMES.get(map_name, THEMES["dustline"])
@@ -835,6 +1168,23 @@ def build(project, map_name):
         for yy in range(y, y + h):
             for xx in range(x, x + w):
                 cover.add((xx, yy))
+    # Building furniture and glass: solid in game, but not walls or roofs here.
+    glass = {tuple(c) for c in d.get("windows", [])}
+    for x, y, w, h in d.get("props", []):
+        for yy in range(y, y + h):
+            for xx in range(x, x + w):
+                cover.add((xx, yy))
+    cover |= glass
+    for x, y, w, h in d.get("gates", []) + d.get("barricades", []):
+        for yy in range(y, y + h):
+            for xx in range(x, x + w):
+                cover.add((xx, yy))
+    # Every cell that is part of a building (walls included): no awnings there.
+    in_building = set()
+    for (ix, iy, iw, ih, _k, _n) in d.get("interiors", []):
+        for yy in range(iy - 1, iy + ih + 1):
+            for xx in range(ix - 1, ix + iw + 1):
+                in_building.add((xx, yy))
 
     sc = bpy.data.scenes.get("LD_" + map_name) or bpy.data.scenes.new("LD_" + map_name)
     _set_scene(sc)
@@ -860,6 +1210,10 @@ def build(project, map_name):
     g = bpy.data.objects.new("Ground", me)
     g.data.materials.append(mats["ground"])
     coll.objects.link(g)
+
+    # Building floors (wood, tiles, deck plate) under the rooms.
+    for (x, y, w, h, kind, bname) in d.get("interiors", []):
+        _box_mesh("Floor_" + bname.replace(" ", "_"), [(x - 0.02, -(y + h) - 0.02, x + w + 0.02, -y + 0.02, 0.0, 0.012)], coll, _floor_mat(kind))
 
     # Bomb-site floors.
     for key, (x, y, w, h) in d["sites"].items():
@@ -1010,15 +1364,7 @@ def build(project, map_name):
                 _spool(coll, rng, x + 1.0, -(y + 1.0), 0.92, bump("spool"))
                 continue
         elif style == "industrial":
-            if lng >= 3:
-                _machine(coll, rng, x, y, w, h, bump("mach"))
-                continue
-            if rng.random() < 0.55:
-                _steel_crate(coll, rng, x, y, w, h, bump("scrate"))
-            else:
-                for yy in range(y, y + h):
-                    for xx in range(x, x + w):
-                        _barrel(coll, mats, rng, xx + 0.5, -(yy + 0.5), bump("barrel"))
+            _industrial(coll, mats, rng, x, y, w, h, bump("iprop"))
             continue
         elif style == "yard":
             if sht == 1:
@@ -1042,6 +1388,52 @@ def build(project, map_name):
                 crate_boxes.append((xx + 0.04, -(yy + 1) + 0.04, xx + 0.96, -yy - 0.04, 0.0, hgt))
     if crate_boxes:
         _box_mesh("Crates", crate_boxes, coll, mats["crate"], bevel=0.05)
+
+    # Metal gates: corrugated steel panels on posts, with a top rail.
+    gate_mat = _corr_mat("LD_GateSteel", (0.2, 0.22, 0.24), 3.0)
+    post_mat = _simple_mat("LD_GatePost", (0.08, 0.085, 0.09), 0.8, 0.4)
+    for gi, (x, y, w, h) in enumerate(d.get("gates", [])):
+        vert = h >= w
+        if vert:
+            panel = (x + 0.32, -(y + h) + 0.05, x + 0.68, -y - 0.05, 0.0, 2.3)
+            posts = [(x + 0.25, -y - 0.3, x + 0.75, -y, 0.0, 2.5), (x + 0.25, -(y + h), x + 0.75, -(y + h) + 0.3, 0.0, 2.5)]
+            rail = (x + 0.28, -(y + h), x + 0.72, -y, 2.3, 2.42)
+        else:
+            panel = (x + 0.05, -(y + 0.68), x + w - 0.05, -(y + 0.32), 0.0, 2.3)
+            posts = [(x, -(y + 0.75), x + 0.3, -(y + 0.25), 0.0, 2.5), (x + w - 0.3, -(y + 0.75), x + w, -(y + 0.25), 0.0, 2.5)]
+            rail = (x, -(y + 0.72), x + w, -(y + 0.28), 2.3, 2.42)
+        _box_mesh("Gate_%d" % gi, [panel], coll, gate_mat, bevel=0.02)
+        _box_mesh("GatePosts_%d" % gi, posts + [rail], coll, post_mat, bevel=0.03)
+
+    # Barricades: wrecked cars parked across a lane, nose to tail.
+    for bi, (x, y, w, h) in enumerate(d.get("barricades", [])):
+        _car(coll, mats, rng, x, y, w, h, 20 + bi)
+
+    # Furniture inside the buildings.
+    for pi, (x, y, w, h) in enumerate(d.get("props", [])):
+        _furniture(coll, rng, style, x, y, w, h, pi)
+
+    # Windows: an open gap in the wall over a low sill, with a wooden frame
+    # (see, shoot and throw through it in game; you can't climb through).
+    sills, frames = [], []
+    for (gx, gy) in sorted(glass):
+        horiz = not is_open(gx - 1, gy) and not is_open(gx + 1, gy)  # Wall runs along x.
+        sills.append((gx, -(gy + 1), gx + 1, -gy, 0.0, 0.8))
+        if horiz:
+            frames.append((gx, -(gy + 0.5) - 0.06, gx + 1, -(gy + 0.5) + 0.06, 0.8, 0.86))
+            if (gx - 1, gy) not in glass:
+                frames.append((gx, -(gy + 1), gx + 0.12, -gy, 0.0, H_WALL))
+            if (gx + 1, gy) not in glass:
+                frames.append((gx + 0.88, -(gy + 1), gx + 1, -gy, 0.0, H_WALL))
+        else:
+            frames.append((gx + 0.5 - 0.06, -(gy + 1), gx + 0.5 + 0.06, -gy, 0.8, 0.86))
+            if (gx, gy - 1) not in glass:
+                frames.append((gx, -gy - 0.12, gx + 1, -gy, 0.0, H_WALL))
+            if (gx, gy + 1) not in glass:
+                frames.append((gx, -(gy + 1), gx + 1, -(gy + 1) + 0.12, 0.0, H_WALL))
+    if sills:
+        _box_mesh("Sills", sills, coll, mats["wall_mat"], bevel=0.04)
+        _box_mesh("WindowFrames", frames, coll, _simple_mat("LD_WindowFrame", (0.12, 0.07, 0.035), 0.0, 0.6), bevel=0.02)
 
     # Painted safety lines along the foot of the walls (not on desert sand).
     if style != "desert":
@@ -1073,7 +1465,11 @@ def build(project, map_name):
                 if is_open(x, y) or (x, y) in cover:
                     continue
                 for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
-                    # Street must be open for 4 cells out from this wall.
+                    # Street must be open for 4 cells out from this wall (and not a room or a building wall).
+                    if (x, y) in in_building:
+                        continue
+                    if any(ix <= x + dx < ix + iw and iy <= y + dy < iy + ih for (ix, iy, iw, ih, _k, _n) in d.get("interiors", [])):
+                        continue
                     if not all(is_open(x + dx * k, y + dy * k) for k in range(1, 5)):
                         continue
                     ax, ay = (1, 0) if dx == 0 else (0, 1)  # along the wall
