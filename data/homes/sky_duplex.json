@@ -1,0 +1,296 @@
+{
+ "name": "Sky duplex",
+ "style": "penthouse",
+ "walls": "marble_dark",
+ "grid": [
+  "#WWWWWWWWW#WWWWWWWWW#WWWWWWWWWW#",
+  "#_________#.........#~~~~~~#mmm#",
+  "#_________#.........#~~~~~~#mmm#",
+  "#_________#.........#~~~~~~DmmmW",
+  "#_________#.........#~~~~~~#mmm#",
+  "#_________#.........#~~~~~~#mmm#",
+  "#_________#.........#~~~~~~#####",
+  "#_________#.........#~~~~~~#####",
+  "#####D#########D#######D########",
+  "#mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm#",
+  "#mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmE",
+  "Wmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm#",
+  "#mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmW",
+  "#mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm#",
+  "#mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm#",
+  "##############DDDD##############",
+  "#dddddddddddddddddddddddddddddd#",
+  "#ddddddddwwwwwwwwwwwwdddddddddd#",
+  "#ddddddddwwwwwwwwwwwwdddddddddd#",
+  "#ddddddddwwwwwwwwwwwwdddddddddd#",
+  "#dddddddddddddddddddddddddddddd#",
+  "################################"
+ ],
+ "spawn": [
+  30,
+  10
+ ],
+ "items": [
+  {
+   "k": "car_super",
+   "x": 2,
+   "y": 1,
+   "rot": 0,
+   "use": "car",
+   "need": "car",
+   "slot": 0
+  },
+  {
+   "k": "car_sports",
+   "x": 6,
+   "y": 1,
+   "rot": 0,
+   "use": "car",
+   "need": "car",
+   "slot": 1
+  },
+  {
+   "k": "desk_pc_3",
+   "x": 11,
+   "y": 1,
+   "rot": 0,
+   "use": "pc"
+  },
+  {
+   "k": "studio_rig",
+   "x": 15,
+   "y": 1,
+   "rot": 0,
+   "need": "studio"
+  },
+  {
+   "k": "arcade",
+   "x": 19,
+   "y": 1,
+   "rot": 0,
+   "use": "arcade",
+   "need": "arcade"
+  },
+  {
+   "k": "beanbag",
+   "x": 12,
+   "y": 5,
+   "rot": 0
+  },
+  {
+   "k": "home_gym",
+   "x": 16,
+   "y": 5,
+   "rot": 0,
+   "use": "gym",
+   "need": "home_gym"
+  },
+  {
+   "k": "bed_king",
+   "x": 22,
+   "y": 1,
+   "rot": 0,
+   "use": "bed"
+  },
+  {
+   "k": "nightstand",
+   "x": 21,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "nightstand",
+   "x": 26,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "wardrobe",
+   "x": 24,
+   "y": 7,
+   "rot": 180,
+   "use": "wardrobe"
+  },
+  {
+   "k": "armchair",
+   "x": 21,
+   "y": 6,
+   "rot": 0
+  },
+  {
+   "k": "toilet",
+   "x": 28,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "bathtub",
+   "x": 29,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "sink",
+   "x": 28,
+   "y": 5,
+   "rot": 180
+  },
+  {
+   "k": "trophy_cabinet",
+   "x": 8,
+   "y": 9,
+   "rot": 0,
+   "use": "trophies",
+   "need": "trophy_case"
+  },
+  {
+   "k": "kitchen_line",
+   "x": 1,
+   "y": 9,
+   "rot": 270,
+   "use": "kitchen"
+  },
+  {
+   "k": "kitchen_island",
+   "x": 3,
+   "y": 10,
+   "rot": 90
+  },
+  {
+   "k": "fridge",
+   "x": 1,
+   "y": 14,
+   "rot": 0
+  },
+  {
+   "k": "dining_table",
+   "x": 7,
+   "y": 11,
+   "rot": 0
+  },
+  {
+   "k": "piano",
+   "x": 12,
+   "y": 9,
+   "rot": 0,
+   "use": "piano",
+   "need": "piano"
+  },
+  {
+   "k": "plant_big",
+   "x": 11,
+   "y": 14,
+   "rot": 0
+  },
+  {
+   "k": "rug_big",
+   "x": 18,
+   "y": 10,
+   "rot": 0
+  },
+  {
+   "k": "sofa_corner",
+   "x": 18,
+   "y": 10,
+   "rot": 0,
+   "use": "sofa"
+  },
+  {
+   "k": "coffee_table",
+   "x": 20,
+   "y": 13,
+   "rot": 0
+  },
+  {
+   "k": "tv_big",
+   "x": 18,
+   "y": 14,
+   "rot": 180,
+   "use": "tv"
+  },
+  {
+   "k": "aquarium",
+   "x": 25,
+   "y": 9,
+   "rot": 0,
+   "use": "aquarium",
+   "need": "aquarium"
+  },
+  {
+   "k": "plant_big",
+   "x": 29,
+   "y": 9,
+   "rot": 0
+  },
+  {
+   "k": "bar_counter",
+   "x": 30,
+   "y": 11,
+   "rot": 90,
+   "use": "bar"
+  },
+  {
+   "k": "pet_bed",
+   "x": 28,
+   "y": 14,
+   "rot": 0,
+   "need": "pet"
+  },
+  {
+   "k": "lounger",
+   "x": 2,
+   "y": 17,
+   "rot": 0
+  },
+  {
+   "k": "lounger",
+   "x": 4,
+   "y": 17,
+   "rot": 0
+  },
+  {
+   "k": "lounger",
+   "x": 6,
+   "y": 17,
+   "rot": 0
+  },
+  {
+   "k": "hot_tub",
+   "x": 26,
+   "y": 16,
+   "rot": 0,
+   "use": "tub",
+   "need": "hot_tub"
+  },
+  {
+   "k": "patio_set",
+   "x": 22,
+   "y": 18,
+   "rot": 0
+  },
+  {
+   "k": "telescope",
+   "x": 30,
+   "y": 20,
+   "rot": 0,
+   "use": "view"
+  },
+  {
+   "k": "plant",
+   "x": 1,
+   "y": 20,
+   "rot": 0
+  },
+  {
+   "k": "bbq",
+   "x": 9,
+   "y": 20,
+   "rot": 0
+  }
+ ],
+ "id": "sky_duplex",
+ "size": [
+  32,
+  22
+ ]
+}

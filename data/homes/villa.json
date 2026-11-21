@@ -1,0 +1,295 @@
+{
+ "name": "Modern villa",
+ "style": "villa",
+ "walls": "stone_white",
+ "grid": [
+  "##########WWWWW#WWWWWWWW#WWW##",
+  "#________#.....#~~~~~~~~#mmmm#",
+  "#________#.....#~~~~~~~~#mmmm#",
+  "#________#.....#~~~~~~~~Dmmmm#",
+  "#________#.....#~~~~~~~~#mmmm#",
+  "#________#.....#~~~~~~~~#mmmm#",
+  "#________#.....#~~~~~~~~######",
+  "####D######D######D###########",
+  "#mmmmmmmmmmmmmmmmmmmmmmmmmmmm#",
+  "#mmmmmmmmmmmmmmmmmmmmmmmmmmmmE",
+  "#,,,,,,,mmmmmmmmmmmmmmmmmmmmm#",
+  "W,,,,,,,mmmmmmmmmmmmmmmmmmmmm#",
+  "#,,,,,,,mmmmmmmmmmmmmmmmmmmmmW",
+  "#,,,,,,,mmmmmmmmmmmmmmmmmmmmm#",
+  "#,,,,,,,mmmmmmmmmmmmmmmmmmmmm#",
+  "##########DDDD################",
+  "#ssssssssddddddgggggggggggggg#",
+  "#sswwwwwwwwwwddgggggggggggggg#",
+  "#sswwwwwwwwwwddgggggggggggggg#",
+  "#sswwwwwwwwwwddgggggggggggggg#",
+  "#ssssssssssssddgggggggggggggg#",
+  "##############################"
+ ],
+ "spawn": [
+  28,
+  9
+ ],
+ "items": [
+  {
+   "k": "car_sports",
+   "x": 2,
+   "y": 1,
+   "rot": 0,
+   "use": "car",
+   "need": "car",
+   "slot": 0
+  },
+  {
+   "k": "car_suv",
+   "x": 6,
+   "y": 1,
+   "rot": 0,
+   "use": "car",
+   "need": "car",
+   "slot": 1
+  },
+  {
+   "k": "desk_pc_3",
+   "x": 10,
+   "y": 1,
+   "rot": 0,
+   "use": "pc"
+  },
+  {
+   "k": "studio_rig",
+   "x": 13,
+   "y": 1,
+   "rot": 90,
+   "need": "studio"
+  },
+  {
+   "k": "arcade",
+   "x": 10,
+   "y": 6,
+   "rot": 0,
+   "use": "arcade",
+   "need": "arcade"
+  },
+  {
+   "k": "beanbag",
+   "x": 14,
+   "y": 6,
+   "rot": 0
+  },
+  {
+   "k": "bed_king",
+   "x": 18,
+   "y": 1,
+   "rot": 0,
+   "use": "bed"
+  },
+  {
+   "k": "nightstand",
+   "x": 17,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "nightstand",
+   "x": 22,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "wardrobe",
+   "x": 16,
+   "y": 4,
+   "rot": 270,
+   "use": "wardrobe"
+  },
+  {
+   "k": "dresser",
+   "x": 23,
+   "y": 5,
+   "rot": 90
+  },
+  {
+   "k": "shower",
+   "x": 25,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "bathtub",
+   "x": 27,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "sink",
+   "x": 25,
+   "y": 5,
+   "rot": 180
+  },
+  {
+   "k": "sink",
+   "x": 26,
+   "y": 5,
+   "rot": 180
+  },
+  {
+   "k": "toilet",
+   "x": 28,
+   "y": 5,
+   "rot": 90
+  },
+  {
+   "k": "kitchen_line",
+   "x": 1,
+   "y": 10,
+   "rot": 270,
+   "use": "kitchen"
+  },
+  {
+   "k": "kitchen_island",
+   "x": 3,
+   "y": 11,
+   "rot": 90
+  },
+  {
+   "k": "fridge",
+   "x": 6,
+   "y": 10,
+   "rot": 0
+  },
+  {
+   "k": "dining_table",
+   "x": 9,
+   "y": 11,
+   "rot": 0
+  },
+  {
+   "k": "trophy_cabinet",
+   "x": 13,
+   "y": 8,
+   "rot": 0,
+   "use": "trophies",
+   "need": "trophy_case"
+  },
+  {
+   "k": "piano",
+   "x": 21,
+   "y": 8,
+   "rot": 0,
+   "use": "piano",
+   "need": "piano"
+  },
+  {
+   "k": "aquarium",
+   "x": 25,
+   "y": 8,
+   "rot": 0,
+   "use": "aquarium",
+   "need": "aquarium"
+  },
+  {
+   "k": "plant_big",
+   "x": 8,
+   "y": 8,
+   "rot": 0
+  },
+  {
+   "k": "rug_big",
+   "x": 18,
+   "y": 10,
+   "rot": 0
+  },
+  {
+   "k": "armchair",
+   "x": 17,
+   "y": 11,
+   "rot": 0
+  },
+  {
+   "k": "sofa",
+   "x": 19,
+   "y": 11,
+   "rot": 0,
+   "use": "sofa"
+  },
+  {
+   "k": "coffee_table",
+   "x": 20,
+   "y": 13,
+   "rot": 0
+  },
+  {
+   "k": "tv_big",
+   "x": 18,
+   "y": 14,
+   "rot": 180,
+   "use": "tv"
+  },
+  {
+   "k": "bar_counter",
+   "x": 28,
+   "y": 10,
+   "rot": 90,
+   "use": "bar"
+  },
+  {
+   "k": "pet_bed",
+   "x": 14,
+   "y": 13,
+   "rot": 0,
+   "need": "pet"
+  },
+  {
+   "k": "lounger",
+   "x": 1,
+   "y": 17,
+   "rot": 0
+  },
+  {
+   "k": "lounger",
+   "x": 2,
+   "y": 17,
+   "rot": 0
+  },
+  {
+   "k": "hot_tub",
+   "x": 15,
+   "y": 17,
+   "rot": 0,
+   "use": "tub",
+   "need": "hot_tub"
+  },
+  {
+   "k": "home_gym",
+   "x": 20,
+   "y": 16,
+   "rot": 0,
+   "use": "gym",
+   "need": "home_gym"
+  },
+  {
+   "k": "tree",
+   "x": 26,
+   "y": 16,
+   "rot": 0
+  },
+  {
+   "k": "tree",
+   "x": 26,
+   "y": 19,
+   "rot": 0
+  },
+  {
+   "k": "bbq",
+   "x": 1,
+   "y": 16,
+   "rot": 0
+  }
+ ],
+ "id": "villa",
+ "size": [
+  30,
+  22
+ ]
+}

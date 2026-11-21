@@ -1,0 +1,174 @@
+{
+ "name": "Seaside flat",
+ "style": "coastal",
+ "walls": "plaster_blue",
+ "grid": [
+  "#####WWWW#######",
+  "#~~~~~#........#",
+  "#~~~~~#........#",
+  "W~~~~~D........W",
+  "#~~~~~#........#",
+  "#~~~~~#........#",
+  "###D###........E",
+  "#,,,,,#...,,,,,#",
+  "#,,,,,#...,,,,,#",
+  "#######WDDWWWWW#",
+  "      #dddddddd#",
+  "      #dddddddd#",
+  "      ##########"
+ ],
+ "spawn": [
+  14,
+  6
+ ],
+ "items": [
+  {
+   "k": "bed_double",
+   "x": 2,
+   "y": 1,
+   "rot": 0,
+   "use": "bed"
+  },
+  {
+   "k": "nightstand",
+   "x": 1,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "nightstand",
+   "x": 5,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "wardrobe",
+   "x": 1,
+   "y": 2,
+   "rot": 270,
+   "use": "wardrobe"
+  },
+  {
+   "k": "plant",
+   "x": 5,
+   "y": 5,
+   "rot": 0
+  },
+  {
+   "k": "shower",
+   "x": 1,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "sink",
+   "x": 3,
+   "y": 8,
+   "rot": 180
+  },
+  {
+   "k": "toilet",
+   "x": 5,
+   "y": 7,
+   "rot": 90
+  },
+  {
+   "k": "desk_pc_1",
+   "x": 8,
+   "y": 1,
+   "rot": 0,
+   "use": "pc"
+  },
+  {
+   "k": "studio_rig",
+   "x": 12,
+   "y": 1,
+   "rot": 0,
+   "need": "studio"
+  },
+  {
+   "k": "plant",
+   "x": 7,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "trophy_cabinet",
+   "x": 14,
+   "y": 3,
+   "rot": 90,
+   "use": "trophies",
+   "need": "trophy_case"
+  },
+  {
+   "k": "tv_stand",
+   "x": 7,
+   "y": 4,
+   "rot": 270,
+   "use": "tv"
+  },
+  {
+   "k": "rug_small",
+   "x": 8,
+   "y": 4,
+   "rot": 90
+  },
+  {
+   "k": "coffee_table",
+   "x": 9,
+   "y": 5,
+   "rot": 90
+  },
+  {
+   "k": "sofa",
+   "x": 10,
+   "y": 4,
+   "rot": 90,
+   "use": "sofa"
+  },
+  {
+   "k": "kitchen_line",
+   "x": 10,
+   "y": 8,
+   "rot": 180,
+   "use": "kitchen"
+  },
+  {
+   "k": "fridge",
+   "x": 14,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "pet_bed",
+   "x": 8,
+   "y": 7,
+   "rot": 0,
+   "need": "pet"
+  },
+  {
+   "k": "plant_big",
+   "x": 7,
+   "y": 10,
+   "rot": 0
+  },
+  {
+   "k": "lounger",
+   "x": 11,
+   "y": 10,
+   "rot": 90
+  },
+  {
+   "k": "telescope",
+   "x": 14,
+   "y": 10,
+   "rot": 0,
+   "use": "view"
+  }
+ ],
+ "id": "seaside_flat",
+ "size": [
+  16,
+  13
+ ]
+}

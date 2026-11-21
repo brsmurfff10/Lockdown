@@ -1,0 +1,16 @@
+{
+ "ppm": 300,
+ "extent_m": 1.4,
+ "size": 420,
+ "facing": "+X",
+ "files": [
+  "casual_1_top.png",
+  "casual_2_top.png",
+  "casual_3_top.png"
+ ],
+ "desc": {
+  "casual_1_top.png": "grey hoodie + jeans",
+  "casual_2_top.png": "white tee + black jeans",
+  "casual_3_top.png": "olive bomber + light jeans + backwards cap"
+ }
+}

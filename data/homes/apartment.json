@@ -1,0 +1,172 @@
+{
+ "name": "City apartment",
+ "style": "modern",
+ "walls": "plaster_white",
+ "grid": [
+  "####WWW####WWW##",
+  "#........#~~~~~#",
+  "#........#~~~~~#",
+  "W........D~~~~~W",
+  "#........#~~~~~#",
+  "#........#~~~~~#",
+  "#.........######",
+  "W..........#,,,#",
+  "#,,,,,.....D,,,#",
+  "#,,,,,.....#,,,#",
+  "#,,,,,.....#,,,W",
+  "######E#########"
+ ],
+ "spawn": [
+  6,
+  10
+ ],
+ "items": [
+  {
+   "k": "bed_double",
+   "x": 11,
+   "y": 1,
+   "rot": 0,
+   "use": "bed"
+  },
+  {
+   "k": "nightstand",
+   "x": 10,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "nightstand",
+   "x": 14,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "wardrobe",
+   "x": 14,
+   "y": 2,
+   "rot": 90,
+   "use": "wardrobe"
+  },
+  {
+   "k": "rug_small",
+   "x": 11,
+   "y": 4,
+   "rot": 0
+  },
+  {
+   "k": "desk_pc_1",
+   "x": 1,
+   "y": 1,
+   "rot": 0,
+   "use": "pc"
+  },
+  {
+   "k": "studio_rig",
+   "x": 4,
+   "y": 1,
+   "rot": 0,
+   "need": "studio"
+  },
+  {
+   "k": "plant",
+   "x": 7,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "tv_stand",
+   "x": 1,
+   "y": 3,
+   "rot": 270,
+   "use": "tv"
+  },
+  {
+   "k": "rug_small",
+   "x": 2,
+   "y": 4,
+   "rot": 90
+  },
+  {
+   "k": "coffee_table",
+   "x": 3,
+   "y": 4,
+   "rot": 90
+  },
+  {
+   "k": "sofa",
+   "x": 5,
+   "y": 4,
+   "rot": 90,
+   "use": "sofa"
+  },
+  {
+   "k": "trophy_cabinet",
+   "x": 8,
+   "y": 4,
+   "rot": 90,
+   "use": "trophies",
+   "need": "trophy_case"
+  },
+  {
+   "k": "kitchen_island",
+   "x": 2,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "fridge",
+   "x": 5,
+   "y": 8,
+   "rot": 0
+  },
+  {
+   "k": "kitchen_line",
+   "x": 1,
+   "y": 10,
+   "rot": 180,
+   "use": "kitchen"
+  },
+  {
+   "k": "pet_bed",
+   "x": 9,
+   "y": 7,
+   "rot": 0,
+   "need": "pet"
+  },
+  {
+   "k": "plant_big",
+   "x": 10,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "shower",
+   "x": 13,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "sink",
+   "x": 14,
+   "y": 9,
+   "rot": 90
+  },
+  {
+   "k": "toilet",
+   "x": 14,
+   "y": 10,
+   "rot": 90
+  },
+  {
+   "k": "washer",
+   "x": 12,
+   "y": 10,
+   "rot": 0
+  }
+ ],
+ "id": "apartment",
+ "size": [
+  16,
+  12
+ ]
+}

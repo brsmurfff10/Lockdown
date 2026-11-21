@@ -1,0 +1,126 @@
+{
+ "name": "Rented room",
+ "style": "rental",
+ "walls": "plaster_worn",
+ "grid": [
+  "############",
+  "#......#,,,#",
+  "#......#,,,#",
+  "#......#,,,W",
+  "#......##D##",
+  "W..........#",
+  "#..........#",
+  "#..........#",
+  "######E#####"
+ ],
+ "spawn": [
+  6,
+  7
+ ],
+ "items": [
+  {
+   "k": "mattress",
+   "x": 1,
+   "y": 1,
+   "rot": 0,
+   "use": "bed"
+  },
+  {
+   "k": "lamp",
+   "x": 3,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "desk_pc_0",
+   "x": 4,
+   "y": 1,
+   "rot": 0,
+   "use": "pc"
+  },
+  {
+   "k": "trophy_cabinet",
+   "x": 4,
+   "y": 3,
+   "rot": 0,
+   "use": "trophies",
+   "need": "trophy_case"
+  },
+  {
+   "k": "wardrobe",
+   "x": 1,
+   "y": 5,
+   "rot": 270,
+   "use": "wardrobe"
+  },
+  {
+   "k": "beanbag",
+   "x": 3,
+   "y": 5,
+   "rot": 0,
+   "use": "sofa"
+  },
+  {
+   "k": "rug_small",
+   "x": 2,
+   "y": 5,
+   "rot": 0
+  },
+  {
+   "k": "tv_stand",
+   "x": 2,
+   "y": 7,
+   "rot": 180,
+   "use": "tv"
+  },
+  {
+   "k": "pet_bed",
+   "x": 9,
+   "y": 5,
+   "rot": 0,
+   "need": "pet"
+  },
+  {
+   "k": "kitchenette",
+   "x": 8,
+   "y": 7,
+   "rot": 180,
+   "use": "kitchen"
+  },
+  {
+   "k": "fridge",
+   "x": 10,
+   "y": 6,
+   "rot": 0
+  },
+  {
+   "k": "shower",
+   "x": 8,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "toilet",
+   "x": 10,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "sink",
+   "x": 10,
+   "y": 2,
+   "rot": 90
+  },
+  {
+   "k": "plant",
+   "x": 1,
+   "y": 4,
+   "rot": 0
+  }
+ ],
+ "id": "rented_room",
+ "size": [
+  12,
+  9
+ ]
+}

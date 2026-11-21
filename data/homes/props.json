@@ -1,0 +1,359 @@
+{
+ "px_per_cell": 64,
+ "props": {
+  "mattress": {
+   "w": 2,
+   "h": 3,
+   "solid": true,
+   "desc": "bare mattress on the floor with a crumpled duvet and one pillow at the top (rental)"
+  },
+  "bed_single": {
+   "w": 2,
+   "h": 3,
+   "solid": true,
+   "desc": "single bed, wooden frame, headboard along the top edge, pillow at top"
+  },
+  "bed_double": {
+   "w": 3,
+   "h": 3,
+   "solid": true,
+   "desc": "double bed, upholstered headboard along the top, two pillows, folded throw at the foot"
+  },
+  "bed_king": {
+   "w": 4,
+   "h": 4,
+   "solid": true,
+   "desc": "luxury king bed, tall padded headboard along the top, four pillows, silk duvet"
+  },
+  "nightstand": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "small bedside table with a lamp"
+  },
+  "wardrobe": {
+   "w": 3,
+   "h": 1,
+   "solid": true,
+   "desc": "wardrobe, back against the top edge, doors facing down"
+  },
+  "dresser": {
+   "w": 2,
+   "h": 1,
+   "solid": true,
+   "desc": "chest of drawers with a few items on top"
+  },
+  "sofa": {
+   "w": 4,
+   "h": 2,
+   "solid": true,
+   "desc": "3-seat fabric sofa, backrest along the top, cushions, seats facing down"
+  },
+  "sofa_corner": {
+   "w": 5,
+   "h": 3,
+   "solid": true,
+   "desc": "L-shaped corner sofa: long part along the top (5 wide), short leg down the left side, facing down/right"
+  },
+  "armchair": {
+   "w": 2,
+   "h": 2,
+   "solid": true,
+   "desc": "armchair facing down"
+  },
+  "beanbag": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "gamer beanbag"
+  },
+  "coffee_table": {
+   "w": 2,
+   "h": 1,
+   "solid": true,
+   "desc": "low coffee table with a magazine and a mug"
+  },
+  "tv_stand": {
+   "w": 4,
+   "h": 1,
+   "solid": true,
+   "desc": "low TV stand with a flat TV on it; the screen faces down"
+  },
+  "tv_big": {
+   "w": 6,
+   "h": 1,
+   "solid": true,
+   "desc": "big wall TV over a long media console; screen faces down; soundbar"
+  },
+  "bookshelf": {
+   "w": 3,
+   "h": 1,
+   "solid": true,
+   "desc": "bookshelf full of books, back against the top edge"
+  },
+  "lamp": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "floor lamp (round shade seen from above)"
+  },
+  "plant": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "potted plant (leafy, seen from above)"
+  },
+  "plant_big": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "large potted plant / small indoor tree, bigger crown overhanging the cell"
+  },
+  "rug_small": {
+   "w": 3,
+   "h": 2,
+   "solid": false,
+   "desc": "small rug (flat, patterned)"
+  },
+  "rug_big": {
+   "w": 5,
+   "h": 4,
+   "solid": false,
+   "desc": "large living-room rug (flat)"
+  },
+  "rug_round": {
+   "w": 3,
+   "h": 3,
+   "solid": false,
+   "desc": "round rug (flat)"
+  },
+  "piano": {
+   "w": 3,
+   "h": 2,
+   "solid": true,
+   "desc": "black grand piano, keyboard along the bottom edge, bench below"
+  },
+  "aquarium": {
+   "w": 3,
+   "h": 1,
+   "solid": true,
+   "desc": "long fish tank on a cabinet (blue water, fish, plants seen from above)"
+  },
+  "arcade": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "retro arcade cabinet, screen/controls facing down"
+  },
+  "bar_counter": {
+   "w": 4,
+   "h": 1,
+   "solid": true,
+   "desc": "home bar counter with bottles and stools on the bottom side"
+  },
+  "telescope": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "telescope on a tripod"
+  },
+  "desk_pc_0": {
+   "w": 3,
+   "h": 2,
+   "solid": true,
+   "desc": "cheap desk: laptop, folding chair in the bottom row (setup level 0)"
+  },
+  "desk_pc_1": {
+   "w": 3,
+   "h": 2,
+   "solid": true,
+   "desc": "gaming desk: one monitor, keyboard, mouse pad, gaming chair in the bottom row (level 1)"
+  },
+  "desk_pc_2": {
+   "w": 3,
+   "h": 2,
+   "solid": true,
+   "desc": "gaming desk: two monitors, RGB keyboard, mic arm, better chair in the bottom row (level 2)"
+  },
+  "desk_pc_3": {
+   "w": 3,
+   "h": 2,
+   "solid": true,
+   "desc": "pro battlestation: three monitors / ultrawide, RGB strips, tower PC, premium chair (level 3)"
+  },
+  "studio_rig": {
+   "w": 3,
+   "h": 2,
+   "solid": true,
+   "desc": "streaming studio corner: softbox lights, camera on a tripod, green screen roll along the top, mic"
+  },
+  "trophy_cabinet": {
+   "w": 3,
+   "h": 1,
+   "solid": true,
+   "desc": "glass trophy cabinet, back against the top edge, gold cups and plaques on shelves"
+  },
+  "home_gym": {
+   "w": 4,
+   "h": 3,
+   "solid": true,
+   "desc": "home gym: treadmill, bench with a barbell rack, dumbbells, rubber mat"
+  },
+  "kitchenette": {
+   "w": 3,
+   "h": 1,
+   "solid": true,
+   "desc": "tiny kitchenette: two-ring hob, small sink, cupboard; back along the top edge"
+  },
+  "kitchen_line": {
+   "w": 5,
+   "h": 1,
+   "solid": true,
+   "desc": "kitchen counter run: sink, hob, worktop, along the top edge"
+  },
+  "kitchen_island": {
+   "w": 3,
+   "h": 2,
+   "solid": true,
+   "desc": "kitchen island with stools along the bottom"
+  },
+  "fridge": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "fridge (steel)"
+  },
+  "dining_table": {
+   "w": 4,
+   "h": 3,
+   "solid": true,
+   "desc": "dining table for six with chairs on all sides"
+  },
+  "toilet": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "toilet, cistern along the top"
+  },
+  "sink": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "bathroom sink with a mirror edge at the top"
+  },
+  "shower": {
+   "w": 2,
+   "h": 2,
+   "solid": true,
+   "desc": "shower tray with a glass screen"
+  },
+  "bathtub": {
+   "w": 2,
+   "h": 3,
+   "solid": true,
+   "desc": "bathtub, taps at the top"
+  },
+  "washer": {
+   "w": 1,
+   "h": 1,
+   "solid": true,
+   "desc": "washing machine"
+  },
+  "tree": {
+   "w": 2,
+   "h": 2,
+   "solid": true,
+   "desc": "garden tree (round leafy crown)"
+  },
+  "hot_tub": {
+   "w": 3,
+   "h": 3,
+   "solid": true,
+   "desc": "hot tub (square, blue water, wooden surround)"
+  },
+  "lounger": {
+   "w": 1,
+   "h": 2,
+   "solid": true,
+   "desc": "sun lounger, head end at the top"
+  },
+  "bbq": {
+   "w": 2,
+   "h": 1,
+   "solid": true,
+   "desc": "barbecue grill"
+  },
+  "patio_set": {
+   "w": 3,
+   "h": 3,
+   "solid": true,
+   "desc": "round patio table with four chairs and a parasol seen from above"
+  },
+  "doormat": {
+   "w": 2,
+   "h": 1,
+   "solid": false,
+   "desc": "door mat (flat)"
+  },
+  "pet_bed": {
+   "w": 1,
+   "h": 1,
+   "solid": false,
+   "desc": "round pet bed with a cushion"
+  },
+  "dog": {
+   "w": 1,
+   "h": 1,
+   "solid": false,
+   "desc": "a dog (golden retriever) lying/standing, nose pointing UP (-y), seen from above"
+  },
+  "cat": {
+   "w": 1,
+   "h": 1,
+   "solid": false,
+   "desc": "a cat (ginger), nose pointing UP (-y), seen from above"
+  },
+  "car_hatchback": {
+   "w": 3,
+   "h": 5,
+   "solid": true,
+   "desc": "small hatchback, nose pointing up; dull blue"
+  },
+  "car_sports": {
+   "w": 3,
+   "h": 5,
+   "solid": true,
+   "desc": "sports car, nose pointing up; red"
+  },
+  "car_suv": {
+   "w": 3,
+   "h": 5,
+   "solid": true,
+   "desc": "electric SUV, nose pointing up; white with a glass roof"
+  },
+  "car_super": {
+   "w": 3,
+   "h": 5,
+   "solid": true,
+   "desc": "supercar, nose pointing up; matte black with orange accents"
+  }
+ },
+ "uses": {
+  "bed": "Sleep",
+  "pc": "Use the PC",
+  "tv": "Watch TV",
+  "kitchen": "Cook",
+  "trophies": "Trophy cabinet",
+  "gym": "Work out",
+  "car": "Go for a drive",
+  "sofa": "Sit down",
+  "wardrobe": "Wardrobe",
+  "pet": "Pet",
+  "view": "Take in the view",
+  "tub": "Hot tub",
+  "piano": "Play the piano",
+  "arcade": "Play",
+  "aquarium": "Watch the fish",
+  "bar": "Pour a drink"
+ }
+}

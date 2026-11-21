@@ -1,0 +1,180 @@
+{
+ "name": "Industrial loft",
+ "style": "loft",
+ "walls": "brick",
+ "grid": [
+  "##WWWW####WWWW####",
+  "#_________.......#",
+  "#_________.......#",
+  "W_________.......W",
+  "#_________.......#",
+  "#_________.......#",
+  "#____________#####",
+  "#____________D,,,#",
+  "#____________#,,,#",
+  "W____________#,,,#",
+  "#____________#,,,#",
+  "########E#########"
+ ],
+ "spawn": [
+  8,
+  10
+ ],
+ "items": [
+  {
+   "k": "bed_double",
+   "x": 12,
+   "y": 1,
+   "rot": 0,
+   "use": "bed"
+  },
+  {
+   "k": "nightstand",
+   "x": 11,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "nightstand",
+   "x": 15,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "wardrobe",
+   "x": 16,
+   "y": 3,
+   "rot": 90,
+   "use": "wardrobe"
+  },
+  {
+   "k": "rug_round",
+   "x": 11,
+   "y": 3,
+   "rot": 0
+  },
+  {
+   "k": "desk_pc_1",
+   "x": 1,
+   "y": 1,
+   "rot": 0,
+   "use": "pc"
+  },
+  {
+   "k": "studio_rig",
+   "x": 4,
+   "y": 1,
+   "rot": 0,
+   "need": "studio"
+  },
+  {
+   "k": "arcade",
+   "x": 7,
+   "y": 1,
+   "rot": 0,
+   "use": "arcade",
+   "need": "arcade"
+  },
+  {
+   "k": "trophy_cabinet",
+   "x": 8,
+   "y": 1,
+   "rot": 0,
+   "use": "trophies",
+   "need": "trophy_case"
+  },
+  {
+   "k": "kitchen_line",
+   "x": 1,
+   "y": 5,
+   "rot": 270,
+   "use": "kitchen"
+  },
+  {
+   "k": "fridge",
+   "x": 1,
+   "y": 10,
+   "rot": 0
+  },
+  {
+   "k": "rug_big",
+   "x": 3,
+   "y": 5,
+   "rot": 0
+  },
+  {
+   "k": "sofa_corner",
+   "x": 3,
+   "y": 5,
+   "rot": 0,
+   "use": "sofa"
+  },
+  {
+   "k": "coffee_table",
+   "x": 4,
+   "y": 8,
+   "rot": 0
+  },
+  {
+   "k": "tv_stand",
+   "x": 3,
+   "y": 10,
+   "rot": 180,
+   "use": "tv"
+  },
+  {
+   "k": "dining_table",
+   "x": 8,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "plant_big",
+   "x": 12,
+   "y": 10,
+   "rot": 0
+  },
+  {
+   "k": "pet_bed",
+   "x": 8,
+   "y": 4,
+   "rot": 0,
+   "need": "pet"
+  },
+  {
+   "k": "lamp",
+   "x": 10,
+   "y": 5,
+   "rot": 0
+  },
+  {
+   "k": "shower",
+   "x": 15,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "toilet",
+   "x": 16,
+   "y": 10,
+   "rot": 90
+  },
+  {
+   "k": "sink",
+   "x": 14,
+   "y": 10,
+   "rot": 180
+  },
+  {
+   "k": "washer",
+   "x": 16,
+   "y": 9,
+   "rot": 0
+  }
+ ],
+ "id": "loft",
+ "size": [
+  18,
+  12
+ ]
+}

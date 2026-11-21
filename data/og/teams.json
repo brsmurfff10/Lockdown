@@ -1,0 +1,917 @@
+{
+ "source": "HLTV.org world ranking, 28 December 2015",
+ "teams": [
+  {
+   "rank": 1,
+   "name": "fnatic",
+   "points": 1000,
+   "slug": "fnatic",
+   "logo": "fnatic.png",
+   "color": "ff5900",
+   "color2": "",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "olofmeister",
+     "name": "Olof 'olofmeister' Kajbjer",
+     "nation": "Sweden",
+     "role": "",
+     "star": 6
+    },
+    {
+     "nick": "dennis",
+     "name": "Dennis 'dennis' Edman",
+     "nation": "Sweden",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "flusha",
+     "name": "Robin 'flusha' Rönnquist",
+     "nation": "Sweden",
+     "role": "",
+     "star": 3
+    },
+    {
+     "nick": "JW",
+     "name": "Jesper 'JW' Wecksell",
+     "nation": "Sweden",
+     "role": "AWPer",
+     "star": 3
+    },
+    {
+     "nick": "KRIMZ",
+     "name": "Freddy 'KRIMZ' Johansson",
+     "nation": "Sweden",
+     "role": "",
+     "star": 3
+    }
+   ]
+  },
+  {
+   "rank": 2,
+   "name": "Envy",
+   "points": 760,
+   "slug": "envy",
+   "logo": "envy.png",
+   "color": "4b7bec",
+   "color2": "",
+   "light_bg": true,
+   "players": [
+    {
+     "nick": "kioShiMa",
+     "name": "Fabien 'kioShiMa' Fiey",
+     "nation": "France",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "kennyS",
+     "name": "Kenny 'kennyS' Schrub",
+     "nation": "France",
+     "role": "AWPer",
+     "star": 5
+    },
+    {
+     "nick": "NBK-",
+     "name": "Nathan 'NBK-' Schmitt",
+     "nation": "France",
+     "role": "",
+     "star": 3
+    },
+    {
+     "nick": "apEX",
+     "name": "Dan 'apEX' Madesclaire",
+     "nation": "France",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "Happy",
+     "name": "Vincent 'Happy' Schopenhauer",
+     "nation": "France",
+     "role": "Support",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 3,
+   "name": "Natus Vincere",
+   "points": 732,
+   "slug": "natus_vincere",
+   "logo": "natus_vincere.png",
+   "color": "ffef00",
+   "color2": "ffffff",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "Edward",
+     "name": "Ioann 'Edward' Sukhariev",
+     "nation": "Ukraine",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Zeus",
+     "name": "Danylo 'Zeus' Teslenko",
+     "nation": "Ukraine",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "GuardiaN",
+     "name": "Ladislav 'GuardiaN' Kovács",
+     "nation": "Slovakia",
+     "role": "AWPer",
+     "star": 5
+    },
+    {
+     "nick": "seized",
+     "name": "Denis 'seized' Kostin",
+     "nation": "Russia",
+     "role": "",
+     "star": 2
+    },
+    {
+     "nick": "flamie",
+     "name": "Egor 'flamie' Vasilyev",
+     "nation": "Russia",
+     "role": "",
+     "star": 3
+    }
+   ]
+  },
+  {
+   "rank": 4,
+   "name": "?",
+   "points": 689,
+   "slug": "team",
+   "logo": "team.png",
+   "color": "f0f0f0",
+   "color2": "f03030",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "karrigan",
+     "name": "Finn 'karrigan' Andersen",
+     "nation": "Denmark",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "cajunb",
+     "name": "René 'cajunb' Borg",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Xyp9x",
+     "name": "Andreas 'Xyp9x' Højsleth",
+     "nation": "Denmark",
+     "role": "",
+     "star": 2
+    },
+    {
+     "nick": "dupreeh",
+     "name": "Peter 'dupreeh' Rasmussen",
+     "nation": "Denmark",
+     "role": "",
+     "star": 3
+    },
+    {
+     "nick": "device",
+     "name": "Nicolai 'device' Reedtz",
+     "nation": "Denmark",
+     "role": "AWPer",
+     "star": 4
+    }
+   ]
+  },
+  {
+   "rank": 5,
+   "name": "Virtus.pro",
+   "points": 570,
+   "slug": "virtus_pro",
+   "logo": "virtus_pro.png",
+   "color": "ff5000",
+   "color2": "111820",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "TaZ",
+     "name": "Wiktor 'TaZ' Wojtas",
+     "nation": "Poland",
+     "role": "",
+     "star": 1
+    },
+    {
+     "nick": "NEO",
+     "name": "Filip 'NEO' Kubski",
+     "nation": "Poland",
+     "role": "Support",
+     "star": 2
+    },
+    {
+     "nick": "pashaBiceps",
+     "name": "Jarosław 'pashaBiceps' Jarząbkowski",
+     "nation": "Poland",
+     "role": "",
+     "star": 2
+    },
+    {
+     "nick": "Snax",
+     "name": "Janusz 'Snax' Pogorzelski",
+     "nation": "Poland",
+     "role": "",
+     "star": 4
+    },
+    {
+     "nick": "byali",
+     "name": "Paweł 'byali' Bieliński",
+     "nation": "Poland",
+     "role": "",
+     "star": 2
+    }
+   ]
+  },
+  {
+   "rank": 6,
+   "name": "Ninjas in Pyjamas",
+   "points": 357,
+   "slug": "ninjas_in_pyjamas",
+   "logo": "ninjas_in_pyjamas.png",
+   "color": "a88b65",
+   "color2": "",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "f0rest",
+     "name": "Patrik 'f0rest' Lindberg",
+     "nation": "Sweden",
+     "role": "",
+     "star": 3
+    },
+    {
+     "nick": "GeT_RiGhT",
+     "name": "Christopher 'GeT_RiGhT' Alesund",
+     "nation": "Sweden",
+     "role": "",
+     "star": 4
+    },
+    {
+     "nick": "Xizt",
+     "name": "Richard 'Xizt' Landström",
+     "nation": "Sweden",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "friberg",
+     "name": "Adam 'friberg' Friberg",
+     "nation": "Sweden",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 7,
+   "name": "Luminosity",
+   "points": 319,
+   "slug": "luminosity",
+   "logo": "luminosity.png",
+   "color": "2d8fd5",
+   "color2": "3cbcdc",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "fnx",
+     "name": "Lincoln 'fnx' Lau",
+     "nation": "Brazil",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "FalleN",
+     "name": "Gabriel 'FalleN' Toledo",
+     "nation": "Brazil",
+     "role": "AWPer",
+     "star": 0
+    },
+    {
+     "nick": "fer",
+     "name": "Fernando 'fer' Alvarenga",
+     "nation": "Brazil",
+     "role": "",
+     "star": 3
+    },
+    {
+     "nick": "coldzera",
+     "name": "Marcelo 'coldzera' David",
+     "nation": "Brazil",
+     "role": "",
+     "star": 4
+    },
+    {
+     "nick": "TACO",
+     "name": "Epitacio 'TACO' de Melo",
+     "nation": "Brazil",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 8,
+   "name": "G2",
+   "points": 260,
+   "slug": "g2",
+   "logo": "g2.png",
+   "color": "f0f0f0",
+   "color2": "b0b0b0",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "fox",
+     "name": "Ricardo 'fox' Pacheco",
+     "nation": "Portugal",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "Maikelele",
+     "name": "Mikail 'Maikelele' Bill",
+     "nation": "Sweden",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "aizy",
+     "name": "Philip 'aizy' Aistrup",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "rain",
+     "name": "Håvard 'rain' Nygaard",
+     "nation": "Norway",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "jkaem",
+     "name": "Joakim 'jkaem' Myrbostad",
+     "nation": "Norway",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 9,
+   "name": "Liquid",
+   "points": 238,
+   "slug": "liquid",
+   "logo": "liquid.png",
+   "color": "3a8fd8",
+   "color2": "ffffff",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "Hiko",
+     "name": "Spencer 'Hiko' Martin",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "adreN",
+     "name": "Eric 'adreN' Hoag",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "nitr0",
+     "name": "Nick 'nitr0' Cannella",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "EliGE",
+     "name": "Jonathan 'EliGE' Jablonowski",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 10,
+   "name": "Cloud9",
+   "points": 212,
+   "slug": "cloud9",
+   "logo": "cloud9.png",
+   "color": "00a8ec",
+   "color2": "",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "n0thing",
+     "name": "Jordan 'n0thing' Gilbert",
+     "nation": "USA",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "Skadoodle",
+     "name": "Tyler 'Skadoodle' Latham",
+     "nation": "USA",
+     "role": "AWPer",
+     "star": 0
+    },
+    {
+     "nick": "freakazoid",
+     "name": "Ryan 'freakazoid' Abadir",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "shroud",
+     "name": "Mike 'shroud' Grzesiek",
+     "nation": "Canada",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 11,
+   "name": "Titan",
+   "points": 162,
+   "slug": "titan",
+   "logo": "titan.png",
+   "color": "f0b323",
+   "color2": "",
+   "light_bg": true,
+   "players": [
+    {
+     "nick": "shox",
+     "name": "Richard 'shox' Papillon",
+     "nation": "France",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Ex6TenZ",
+     "name": "Kévin 'Ex6TenZ' Droolans",
+     "nation": "Belgium",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "RpK",
+     "name": "Cédric 'RpK' Guipouy",
+     "nation": "France",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "SmithZz",
+     "name": "Edouard 'SmithZz' Dubourdeaux",
+     "nation": "France",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "ScreaM",
+     "name": "Adil 'ScreaM' Benrlitom",
+     "nation": "Belgium",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 12,
+   "name": "MOUZ",
+   "points": 161,
+   "slug": "mouz",
+   "logo": "mouz.png",
+   "color": "b11739",
+   "color2": "",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "chrisJ",
+     "name": "Chris 'chrisJ' de Jong",
+     "nation": "Netherlands",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "NiKo",
+     "name": "Nikola 'NiKo' Kovač",
+     "nation": "Bosnia",
+     "role": "",
+     "star": 4
+    },
+    {
+     "nick": "nex",
+     "name": "Johannes 'nex' Maget",
+     "nation": "Germany",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Spiidi",
+     "name": "Timo 'Spiidi' Richter",
+     "nation": "Germany",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "denis",
+     "name": "Denis 'denis' Howell",
+     "nation": "Germany",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 13,
+   "name": "Dignitas",
+   "points": 123,
+   "slug": "dignitas",
+   "logo": "dignitas.png",
+   "color": "f0f0f0",
+   "color2": "507070",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "RUBINO",
+     "name": "Ruben 'RUBINO' Villarroel",
+     "nation": "Norway",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "TENZKI",
+     "name": "Jesper 'TENZKI' Plougmann",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "MSL",
+     "name": "Mathias 'MSL' Lauridsen",
+     "nation": "Denmark",
+     "role": "AWPer",
+     "star": 0
+    },
+    {
+     "nick": "Kjaerbye",
+     "name": "Markus 'Kjaerbye' Kjærbye",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "k0nfig",
+     "name": "Kristian 'k0nfig' Wienecke",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 14,
+   "name": "CLG",
+   "points": 122,
+   "slug": "clg",
+   "logo": "clg.png",
+   "color": "00b4e5",
+   "color2": "",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "reltuC",
+     "name": "Stephen 'reltuC' Cutler",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "jdm64",
+     "name": "Josh 'jdm64' Marzano",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "hazed",
+     "name": "James 'hazed' Cobb",
+     "nation": "USA",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "tarik",
+     "name": "Tarik 'tarik' Celik",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 15,
+   "name": "Renegades",
+   "points": 116,
+   "slug": "renegades",
+   "logo": "renegades.png",
+   "color": "d23a3a",
+   "color2": "ca8f29",
+   "light_bg": true,
+   "players": [
+    {
+     "nick": "yam",
+     "name": "Yaman 'yam' Ergenekon",
+     "nation": "Australia",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "jks",
+     "name": "Justin 'jks' Savage",
+     "nation": "Australia",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "AZR",
+     "name": "Aaron 'AZR' Ward",
+     "nation": "Australia",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Havoc",
+     "name": "Luke 'Havoc' Paton",
+     "nation": "Australia",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "SPUNJ",
+     "name": "Chad 'SPUNJ' Burchill",
+     "nation": "Australia",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 16,
+   "name": "Conquest",
+   "points": 115,
+   "slug": "conquest",
+   "logo": "conquest.png",
+   "color": "f0f0f0",
+   "color2": "b0b0b0",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "RUSH",
+     "name": "William 'RUSH' Wierzba",
+     "nation": "USA",
+     "role": "Support",
+     "star": 0
+    },
+    {
+     "nick": "ShahZaM",
+     "name": "Shahzeb 'ShahZaM' Khan",
+     "nation": "USA",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "stanislaw",
+     "name": "Peter 'stanislaw' Jarguz",
+     "nation": "Canada",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "NAF",
+     "name": "Keith 'NAF' Markovic",
+     "nation": "Canada",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "daps",
+     "name": "Damian 'daps' Steele",
+     "nation": "Canada",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 17,
+   "name": "FlipSid3",
+   "points": 113,
+   "slug": "flipsid3",
+   "logo": "flipsid3.png",
+   "color": "77ed29",
+   "color2": "",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "markeloff",
+     "name": "Yegor 'markeloff' Markelov",
+     "nation": "Ukraine",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "B1ad3",
+     "name": "Andrey 'B1ad3' Gorodenskiy",
+     "nation": "Ukraine",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Shara",
+     "name": "Oleksandr 'Shara' Hordieyev",
+     "nation": "Ukraine",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "bondik",
+     "name": "Vladyslav 'bondik' Nechyporchuk",
+     "nation": "Ukraine",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "WorldEdit",
+     "name": "Georgi 'WorldEdit' Yaskin",
+     "nation": "Russia",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 18,
+   "name": "SK",
+   "points": 89,
+   "slug": "sk",
+   "logo": "sk.png",
+   "color": "2b6fd6",
+   "color2": "",
+   "light_bg": true,
+   "players": [
+    {
+     "nick": "Friis",
+     "name": "Michael 'Friis' Jørgensen",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "MODDII",
+     "name": "Andreas 'MODDII' Fridh",
+     "nation": "Sweden",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Pimp",
+     "name": "Jacob 'Pimp' Winneche",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "AcilioN",
+     "name": "Asger 'AcilioN' Larsen",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "Magisk",
+     "name": "Emil 'Magisk' Reif",
+     "nation": "Denmark",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 19,
+   "name": "E-frag.net",
+   "points": 78,
+   "slug": "e_frag_net",
+   "logo": "e_frag_net.png",
+   "color": "b04a8c",
+   "color2": "fdcb00",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "bubble",
+     "name": "Kamen 'bubble' Kostadinov",
+     "nation": "Bulgaria",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "spyleadeR",
+     "name": "Emiliyan 'spyleadeR' Dimitrov",
+     "nation": "Bulgaria",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "nkl",
+     "name": "Nikolay 'nkl' Krastev",
+     "nation": "Bulgaria",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "v1c7oR",
+     "name": "Viktor 'v1c7oR' Dyankov",
+     "nation": "Bulgaria",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "dream3r",
+     "name": "Simeon 'dream3r' Ganev",
+     "nation": "Bulgaria",
+     "role": "",
+     "star": 0
+    }
+   ]
+  },
+  {
+   "rank": 20,
+   "name": "CSGL",
+   "points": 69,
+   "slug": "csgl",
+   "logo": "csgl.png",
+   "color": "cd7514",
+   "color2": "f9a83f",
+   "light_bg": false,
+   "players": [
+    {
+     "nick": "SZPERO",
+     "name": "Grzegorz 'SZPERO' Dziamałek",
+     "nation": "Poland",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "innocent",
+     "name": "Paweł 'innocent' Mocek",
+     "nation": "Poland",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "MICHU",
+     "name": "Michał 'MICHU' Müller",
+     "nation": "Poland",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "oskarish",
+     "name": "Oskar 'oskarish' Stenborowski",
+     "nation": "Poland",
+     "role": "",
+     "star": 0
+    },
+    {
+     "nick": "mouz",
+     "name": "Mikołaj 'mouz' Karolewski",
+     "nation": "Poland",
+     "role": "",
+     "star": 0
+    }
+   ]
+  }
+ ]
+}

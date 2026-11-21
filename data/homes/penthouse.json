@@ -1,0 +1,268 @@
+{
+ "name": "Skyline penthouse",
+ "style": "penthouse",
+ "walls": "marble_dark",
+ "grid": [
+  "#WWWWWWW#WWWWWWWWWWWWWWWWWW#",
+  "W~~~~~~~#mmmmmmmmmmmmmmmmmmW",
+  "W~~~~~~~#mmmmmmmmmmmmmmmmmmW",
+  "W~~~~~~~DmmmmmmmmmmmmmmmmmmW",
+  "W~~~~~~~#mmmmmmmmmmmmmmmmmmW",
+  "W~~~~~~~#mmmmmmmmmmmmmmmmmmE",
+  "W~~~~~~~#mmmmmmmmmmmmmmmmmmW",
+  "#~~~~~~~#mmmmmmmmmmmmmmmmmmW",
+  "####D####mmmmmmmmmmmmmmmmmm#",
+  "#mmmmmmm#mmmmmmmmmmmmmmmmmm#",
+  "#mmmmmmm#mmmmmmmmmmmmmmmmmm#",
+  "#mmmmmmm#mmmmmmmmmmmmmmmmmm#",
+  "#########WWWWWWWWWDDDDWWWWW#",
+  "#dddddddddddddddddddddddddd#",
+  "#dddddddddddddddddddddddddd#",
+  "#dddddddddddddddddddddddddd#",
+  "#dddddddddddddddddddddddddd#",
+  "############################"
+ ],
+ "spawn": [
+  26,
+  5
+ ],
+ "items": [
+  {
+   "k": "bed_king",
+   "x": 2,
+   "y": 1,
+   "rot": 0,
+   "use": "bed"
+  },
+  {
+   "k": "nightstand",
+   "x": 1,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "nightstand",
+   "x": 6,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "wardrobe",
+   "x": 5,
+   "y": 7,
+   "rot": 180,
+   "use": "wardrobe"
+  },
+  {
+   "k": "armchair",
+   "x": 1,
+   "y": 6,
+   "rot": 0
+  },
+  {
+   "k": "bathtub",
+   "x": 1,
+   "y": 9,
+   "rot": 90
+  },
+  {
+   "k": "shower",
+   "x": 6,
+   "y": 9,
+   "rot": 0
+  },
+  {
+   "k": "sink",
+   "x": 6,
+   "y": 11,
+   "rot": 180
+  },
+  {
+   "k": "toilet",
+   "x": 7,
+   "y": 11,
+   "rot": 90
+  },
+  {
+   "k": "desk_pc_3",
+   "x": 9,
+   "y": 1,
+   "rot": 0,
+   "use": "pc"
+  },
+  {
+   "k": "studio_rig",
+   "x": 12,
+   "y": 1,
+   "rot": 0,
+   "need": "studio"
+  },
+  {
+   "k": "trophy_cabinet",
+   "x": 15,
+   "y": 1,
+   "rot": 0,
+   "use": "trophies",
+   "need": "trophy_case"
+  },
+  {
+   "k": "arcade",
+   "x": 18,
+   "y": 1,
+   "rot": 0,
+   "use": "arcade",
+   "need": "arcade"
+  },
+  {
+   "k": "kitchen_line",
+   "x": 20,
+   "y": 1,
+   "rot": 0,
+   "use": "kitchen"
+  },
+  {
+   "k": "fridge",
+   "x": 25,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "plant_big",
+   "x": 26,
+   "y": 1,
+   "rot": 0
+  },
+  {
+   "k": "kitchen_island",
+   "x": 21,
+   "y": 3,
+   "rot": 0
+  },
+  {
+   "k": "dining_table",
+   "x": 21,
+   "y": 7,
+   "rot": 0
+  },
+  {
+   "k": "aquarium",
+   "x": 9,
+   "y": 4,
+   "rot": 270,
+   "use": "aquarium",
+   "need": "aquarium"
+  },
+  {
+   "k": "rug_big",
+   "x": 11,
+   "y": 6,
+   "rot": 0
+  },
+  {
+   "k": "sofa_corner",
+   "x": 11,
+   "y": 6,
+   "rot": 0,
+   "use": "sofa"
+  },
+  {
+   "k": "coffee_table",
+   "x": 13,
+   "y": 9,
+   "rot": 0
+  },
+  {
+   "k": "tv_big",
+   "x": 10,
+   "y": 11,
+   "rot": 180,
+   "use": "tv"
+  },
+  {
+   "k": "piano",
+   "x": 16,
+   "y": 4,
+   "rot": 0,
+   "use": "piano",
+   "need": "piano"
+  },
+  {
+   "k": "bar_counter",
+   "x": 17,
+   "y": 8,
+   "rot": 0,
+   "use": "bar"
+  },
+  {
+   "k": "pet_bed",
+   "x": 25,
+   "y": 10,
+   "rot": 0,
+   "need": "pet"
+  },
+  {
+   "k": "plant_big",
+   "x": 26,
+   "y": 11,
+   "rot": 0
+  },
+  {
+   "k": "hot_tub",
+   "x": 2,
+   "y": 13,
+   "rot": 0,
+   "use": "tub",
+   "need": "hot_tub"
+  },
+  {
+   "k": "lounger",
+   "x": 7,
+   "y": 13,
+   "rot": 0
+  },
+  {
+   "k": "lounger",
+   "x": 9,
+   "y": 13,
+   "rot": 0
+  },
+  {
+   "k": "lounger",
+   "x": 11,
+   "y": 13,
+   "rot": 0
+  },
+  {
+   "k": "patio_set",
+   "x": 14,
+   "y": 13,
+   "rot": 0
+  },
+  {
+   "k": "home_gym",
+   "x": 20,
+   "y": 14,
+   "rot": 0,
+   "use": "gym",
+   "need": "home_gym"
+  },
+  {
+   "k": "telescope",
+   "x": 25,
+   "y": 13,
+   "rot": 0,
+   "use": "view"
+  },
+  {
+   "k": "plant",
+   "x": 26,
+   "y": 16,
+   "rot": 0
+  }
+ ],
+ "id": "penthouse",
+ "size": [
+  28,
+  18
+ ]
+}
