@@ -375,6 +375,33 @@ func _ready() -> void:
 		hub.queue_free()
 		await get_tree().process_frame
 
+	# Insulted players trash-talk back (vulgar), across many players.
+	var swore := 0
+	var tried := 0
+	for t0: TeamData in w.teams:
+		for q: PlayerData in t0.roster:
+			if tried >= 12 or q == w.user_player:
+				continue
+			tried += 1
+			var kq := s.open_thread(q)
+			s.send(kq, "you're fucking trash, uninstall")
+			var said := " ".join(_bot_lines(s.thread(kq))).to_lower()
+			if ["fuck", "shit", "bitch", "dick", "ass", "prick", "bastard", "garbage", "trash", "so bad"].any(func(x: String) -> bool: return said.contains(x)):
+				swore += 1
+			else:
+				print("   (no swear) %s %s: %s" % [q.player_name, ChatText.voice(q), said])
+			if tried <= 6:
+				print("   %s: %s" % [q.player_name, " / ".join(_bot_lines(s.thread(kq)))])
+	_check(swore == tried, "insulted players swear back: %d of %d" % [swore, tried])
+	var punct: Array = []
+	for t1 in 40:
+		var q1: PlayerData = w.teams[t1 % w.teams.size()].roster[0]
+		for tpl: String in ChatText.DM.flame.angry + ChatText.DM.flame.laugh + ChatText.DM.flame.hostile + ChatText.DM.flame.double:
+			var ln1 := ChatText.raw(String(ChatText.line([tpl], ChatText.voice(q1), s._slots(q1), w.rng)[0]))
+			if ln1.contains("!") or (ln1 != "" and ".?".contains(ln1[ln1.length() - 1])):
+				punct.append(ln1)
+		break
+	_check(punct.is_empty(), "trash talk: no ! and no end punctuation %s" % str(punct.slice(0, 3)))
 	Game.end_career()
 	print("SOCIAL: %s (%d failed)" % ["PASS" if fails == 0 else "FAIL", fails])
 	get_tree().quit()

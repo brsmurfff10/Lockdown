@@ -54,6 +54,7 @@ func _duel(rating: int, strafing: bool) -> Dictionary:
 	for k: String in PlayerData.STAT_KEYS:
 		shooter.data.set_stat(k, rating)
 	shooter.give_primary(WeaponData.RAPTOR)
+	shooter.draw_t = 0.0 # Gun already up: measure aim, not the draw.
 	var lane := _open_lane(m, shooter, dummy)
 	shooter.global_position = lane[0]
 	dummy.global_position = lane[1]

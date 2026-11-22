@@ -569,7 +569,7 @@ func attitudes(limit: int = 12) -> Array:
 # =============================================================================
 
 ## You flamed a player at another club in DMs.
-func note_trash_dm(p: PlayerData, harsh: float) -> String:
+func note_trash_dm(p: PlayerData, _harsh: float) -> String:
 	var t := w.owner_of(p)
 	if t == null or (not w.teamless and t == w.user_team()):
 		return ""
@@ -580,7 +580,7 @@ func note_trash_dm(p: PlayerData, harsh: float) -> String:
 	if v == "shy" or (v == "chill" and w.rng.randf() < 0.5):
 		mod = -2.0
 		how = "rattled"
-	var leaked := w.rng.randf() < 0.25 + harsh * 0.3
+	var leaked := false # DMs stay private (no screenshots).
 	trash[p.uid] = {"team": idx, "mod": mod, "leaked": leaked, "until": _now() + 4}
 	note_club(idx, -6.0, "you trash-talked %s" % p.player_name, 16)
 	if leaked:

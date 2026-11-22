@@ -1,4 +1,7 @@
-"""Exports a map script's grid (scripts/maps/map_<name>.gd) to JSON for the
+"""SUPERSEDED: use tests/export_maps.tscn (Godot), which includes buildings,
+windows and furniture. Running this would drop them from the JSON.
+
+Exports a map script's grid (scripts/maps/map_<name>.gd) to JSON for the
 Blender map builder: size, solid cells, cover rects, floors, sites, spawns.
 Usage: python art/export_map.py dustline > art/maps/dustline.json"""
 import re, sys, json

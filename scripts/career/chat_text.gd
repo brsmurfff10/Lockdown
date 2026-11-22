@@ -91,7 +91,7 @@ const DM := {
 		"cold": ["what do you want", "oh. it's you", "hm. hi", "[p] Hi. Make it quick, I'm in practice.", "[y] ...hi", "[t] lol what",
 			"[c] uh hey i guess"],
 		"hostile": ["don't message me", "nah, not talking to you", "you've got some nerve messaging me", "[t] fuck off {me}",
-			"[t] blocked in 3, 2...", "[p] I'd rather we kept this on the server.", "[s] lmao the audacity"],
+			"[t] fuck do you want, loser", "[p] I'd rather we kept this on the server.", "[s] lmao the audacity"],
 	},
 	"praise": {
 		"warm": ["appreciate that {me}, means a lot", "thanks man! you were cracked too", "haha cheers, felt good tbh", "[s] I KNOW RIGHT. thanks {me}!!",
@@ -114,17 +114,56 @@ const DM := {
 			"[s] lmao the PR team wrote that one", "[y] i don't want to talk about it"],
 	},
 	"flame": {
-		"hurt": ["wow. didn't expect that from you", "that's out of order man", "seriously? after everything?", "[c] damn bro thats harsh",
-			"[y] ok... that hurt", "[p] That's unnecessary. Let's keep it professional.", "[i] we're supposed to be a team, {me}",
-			"[m] I've been where you are. this isn't the way"],
-		"angry": ["say that to my face", "look at your own stats before you talk", "you're one to talk with that {rating} rating",
-			"[t] fuck off {me}, you're hardstuck and you know it", "[t] keep talking, see what happens", "[s] lmao imagine flaming ME",
-			"[c] bro chill, who hurt u", "[p] Check your own K/D first.", "[i] fix your own positioning, then we'll talk"],
-		"laugh": ["lmao ok", "haha you're tilted", "someone's had a bad day", "[c] lol ok buddy", "[s] i'm framing this message",
-			"[t] cry more", "[y] lol", "[p] I'll take that as a compliment."],
-		"hostile": ["see you on the server", "we'll settle this in the game", "you just made this personal", "[t] you're done, {me}. watch",
-			"[t] I'm going to hunt you every round", "[s] screenshot taken. see you at the match", "[p] Noted. See you at the match.",
-			"[i] fine. we'll stack your side every round", "[c] ok now i actually want to beat u"],
+		"hurt": ["wow. fuck you too then", "after everything? fuck off {me}", "you're a real piece of shit you know that",
+			"[c] damn bro ok. fuck u too i guess", "[y] ok. go fuck yourself", "[y] wow. dick",
+			"[p] That's a shitty thing to say, {me}. Remember it when you need a favour.",
+			"[i] say that in the team meeting, you spineless prick", "[m] I've wiped my ass with better players than you, kid",
+			"[m] keep that mouth running. your career won't"],
+		"angry": ["haha youre fucking garbage", "lmao youre so fucking bad", "haha ur actually dogshit", "lol youre fucking trash bro",
+			"imagine being this fucking bad and talking", "youre garbage and everyone knows it", "haha shut up youre fucking washed",
+			"bro youre a fucking bot lmao", "nobody gives a shit what you think youre garbage", "lmao you suck so fucking bad",
+			"haha cope you fucking loser", "youre literally the worst player ive ever seen and its not close", "lol ok garbage",
+			"haha youre fucking trash at this game", "talk all you want youre still fucking garbage",
+			"say that to my face you fucking clown", "look at your own stats before you open your mouth, dipshit",
+			"you're one to talk with that {rating} rating lmao. fucking embarrassing", "who the fuck do you think you're talking to",
+			"you couldn't hit a barn door with an AWP, shut the fuck up", "bro you're {myform} and still running your mouth. sit the fuck down",
+			"talk shit when you're not the worst {myrole} in the league", "your aim is dogshit and your personality is worse",
+			"{myteam} pay you to lose and you still find time to type? fuck off",
+			"[t] fuck off {me}, you're hardstuck and everyone knows it", "[t] keep talking bitch, see what happens on the server",
+			"[t] lmao eat shit. you've never won a clutch in your fucking life", "[t] you're a walking eco round, shut the fuck up",
+			"[t] i'll fuck your whole team up and then i'll fuck you up personally", "[t] cope harder you washed up piece of shit",
+			"[s] LMAO IMAGINE FLAMING ME. fucking nobody", "[s] who are you again? genuinely. fuck off",
+			"[s] i'd say gg but you've never had a good game in your fucking life",
+			"[c] bro chill who hurt u lol. ur still dogshit tho", "[c] lmao ok. fuck off with that",
+			"[c] imagine typing all that shit with a {rating} rating lmao",
+			"[p] Check your K/D before you run your mouth, dickhead.", "[p] Pathetic. Absolutely fucking pathetic.",
+			"[i] fix your own positioning, then talk. you die first every round like a fucking bot",
+			"[i] we watch your demos for laughs. genuinely. your shitty peeks are a team bonding thing",
+			"[y] fuck off", "[y] lol ur so fucking bad", "[y] shut the fuck up loser",
+			"[m] son, I was carrying lobbies when you were shitting your diapers"],
+		"laugh": ["haha youre fucking garbage", "lmaooo youre so fucking trash", "haha this from the guy with that {rating} rating",
+			"lol youre fucking garbage and mad about it", "hahaha youre so bad its funny", "lmao imagine being you, fucking loser",
+			"lmao ok you're tilted as fuck", "someone got shit on today huh", "hahaha cry about it you absolute fucking bot",
+			"imagine being this mad lmao. touch grass you fucking goblin",
+			"[c] lol ok buddy. go cry to ur mom, dipshit", "[c] lmaooo who pissed in ur cereal, bitch",
+			"[s] i'm framing this message lmao. fucking seething", "[s] HAHAHA MALDING. fucking clown",
+			"[t] cry more bitch", "[t] lmao the fucking tears", "[t] ratio + you fell off + your aim is shit",
+			"[y] lol fuck off", "[y] lmao ok loser. eat shit",
+			"[p] I'll take that as a compliment from someone that fucking irrelevant.", "[i] lol. is this the new strat? crying in DMs like a little bitch?",
+			"[m] hah. kid's mad. go hit the deathmatch servers instead of crying in my fucking inbox"],
+		"hostile": ["see you on the server. bring a diaper, bitch", "you just made this personal, dickhead", "i'm gonna make you my fucking bitch next match",
+			"every round. i'm hunting you every fucking round", "remember this when you're 0-15, asshole",
+			"[t] you're done, {me}. dead the second you peek, every fucking time", "[t] i'm gonna knife you and tea bag your body, mark my words",
+			"[t] i'll end your shitty career myself", "[s] YOU'RE GOING ON MY HIGHLIGHT REEL, BITCH",
+			"[s] gonna clip every kill on you and post it. enjoy the fame you fucking nobody",
+			"[p] Noted. I'll embarrass your sorry ass on {map}.", "[i] fine. we'll stack your side every fucking round",
+			"[c] ok now i actually wanna shit on u", "[y] see you at the match. you're fucking dead", "[m] that's fine. I'll teach your cocky ass a lesson for free"],
+		"double": ["youre fucking garbage btw", "seriously youre so fucking bad", "haha garbage", "trash ass player",
+			"actually go practice youre fucking dogshit", "lmao fucking garbage", "and another thing, your crosshair placement is a fucking war crime", "genuinely the worst fucking {myrole} i've ever seen",
+			"go back to the minor leagues you fucking tourist", "{myteam} should be paying ME to play against your bitch ass", "uninstall, you shitter",
+			"your mom spectates your games and even she alt-tabs", "and fix your fucking hair",
+			"you peek like a blind dog with a death wish", "bet you buy armor on pistol round, you fucking amateur",
+			"i've seen bots with more game sense, and they're bots", "anyway. dogshit."],
 	},
 	"banter": {
 		"laugh": ["LMAO", "hahaha stop", "ok that's actually funny", "[c] lmaooo", "[s] HAHAHA i'm stealing that", "[t] lmao you're an idiot",
@@ -623,6 +662,14 @@ static func _typo(t: String, rng: RandomNumberGenerator) -> String:
 	return " ".join(words)
 
 
+## Trash talk style: no exclamation marks and nothing at the end of the line.
+static func raw(t: String) -> String:
+	t = t.replace("!", "").strip_edges()
+	while t.length() > 0 and ".?,;:".contains(t[t.length() - 1]):
+		t = t.substr(0, t.length() - 1).strip_edges()
+	return t
+
+
 ## One finished line: template for this voice, slots filled, styled.
 ## Returns [text, template] so callers can remember the template.
 static func line(bank: Array, v: String, slots: Dictionary, rng: RandomNumberGenerator, avoid: Array = []) -> Array:
@@ -639,7 +686,7 @@ static func line(bank: Array, v: String, slots: Dictionary, rng: RandomNumberGen
 const STANCE_TEXT := {
 	"warm": "friendly and positive", "neutral": "neutral, brief", "cold": "cold and distant", "hostile": "hostile, you dislike them",
 	"humble": "modest, deflecting the praise", "accept": "you accept the apology", "wary": "you half-accept, still wary",
-	"reject": "you refuse the apology", "hurt": "hurt and disappointed", "angry": "angry, you fire back", "laugh": "you laugh it off",
+	"reject": "you refuse the apology", "hurt": "hurt, so you insult them back", "angry": "furious: trash talk them back hard, vulgar, swear a lot, roast their aim, stats and career (like: haha youre fucking garbage), no exclamation marks and no punctuation at the end", "laugh": "you mock them for being tilted, swearing and laughing",
 	"meh": "unimpressed", "annoyed": "annoyed", "agree": "you agree with the idea", "suggest": "you suggest a tweak to the idea",
 	"dismiss": "you brush it off", "spy": "you refuse to share your team's tactics", "good": "you're in good form",
 	"bad": "you're in poor form", "yes": "you agree to practise together", "later": "you can't right now, maybe later",
@@ -647,7 +694,7 @@ const STANCE_TEXT := {
 	"already": "you're already teammates", "noclub": "they don't even have a club", "positive": "you'll put in a good word with your club",
 	"fa": "you're a free agent too", "deflect": "you won't discuss money", "askcoach": "it's the coach's decision, not yours",
 	"promise": "you promise them two starts", "earn": "they must earn their place", "pushy": "they're being pushy",
-	"furious": "furious at their disrespect", "thanks": "appreciative", "likes": "you like the idea", "igl": "leave calls to the IGL",
+	"furious": "furious at their disrespect", "hostile_flame": "you threaten to destroy them in the next match, vulgar and swearing, no exclamation marks and no punctuation at the end", "thanks": "appreciative", "likes": "you like the idea", "igl": "leave calls to the IGL",
 	"later_c": "contract talk later", "longterm": "they're part of the long-term plan", "focus": "focus on playing, not money",
 	"under": "they're under contract, don't think about other clubs", "noted": "you'll take a look",
 }

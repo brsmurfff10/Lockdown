@@ -30,7 +30,7 @@ static func ensure() -> void:
 	_key("quit", KEY_ESCAPE)
 	_key("toggle_fullscreen", KEY_F11)
 	_mouse("shoot", MOUSE_BUTTON_LEFT)
-	_key("free_look", KEY_SHIFT)
+	_key("walk", KEY_SHIFT) # Hold: half speed, silent footsteps.
 	_key("speed_up", KEY_EQUAL)
 	_key("speed_up", KEY_KP_ADD)
 	_key("slow_down", KEY_MINUS)

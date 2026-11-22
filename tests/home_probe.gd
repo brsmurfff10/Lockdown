@@ -76,6 +76,13 @@ func _ready() -> void:
 		# Walls hold.
 		var wall_hit := h._blocked(Vector2(-5, -5)) and h._blocked(Vector2(h.W * Home.CELL + 5, 10))
 		_check(wall_hit, "%s: walls block" % hid)
+		if hid == "apartment":
+			_check(h.step_player.stream != null, "footstep sound loaded")
+			Input.action_press("move_down")
+			for i in 60:
+				h._process(1.0 / 60.0)
+			Input.action_release("move_down")
+			_check(h.steps_played >= 2, "footsteps while walking: %d" % h.steps_played)
 		if hid == "sky_duplex":
 			_check(h.pets.size() == 2, "pets roam the duplex: %d" % h.pets.size())
 			_check(h.npcs.size() >= 2, "guests and the chef are there: %d" % h.npcs.size())

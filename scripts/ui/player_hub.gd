@@ -79,6 +79,14 @@ func _nav(page: String) -> void:
 
 
 func _show(page: String) -> void:
+	# Rebuilding the same page (a button on it changed something): keep where you'd scrolled to.
+	var keep := -1
+	if page == _page:
+		var sc := _first_scroll(_content)
+		if sc != null:
+			keep = sc.scroll_vertical
+	if keep > 0:
+		_restore_scroll.call_deferred(keep)
 	_page = page
 	_run_llm() # Lines queued by the week's events (bots messaging you first).
 	for c in _nav_holder.get_children():
@@ -1422,3 +1430,23 @@ func _clubs_card(parent: Control) -> void:
 		row.add_child(rl)
 		c.add_child(row)
 	c.add_child(UI.label("Clubs that won't sign you never make offers; wary ones rarely do.", 11, UI.TEXT_FAINT))
+
+
+func _first_scroll(n: Node) -> ScrollContainer:
+	for c in n.get_children():
+		if c.is_queued_for_deletion():
+			continue
+		if c is ScrollContainer:
+			return c
+		var f := _first_scroll(c)
+		if f != null:
+			return f
+	return null
+
+
+func _restore_scroll(v: int) -> void:
+	await get_tree().process_frame # Let the rebuilt page lay out first.
+	await get_tree().process_frame
+	var sc := _first_scroll(_content)
+	if sc != null:
+		sc.scroll_vertical = v

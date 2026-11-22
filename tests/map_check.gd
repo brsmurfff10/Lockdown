@@ -35,6 +35,10 @@ func _render(arena: Arena, path: String) -> void:
 		for x in arena.W:
 			var c := Vector2i(x, y)
 			var col: Color = Color(0.05, 0.05, 0.06) if arena.is_solid(c) else colors[arena.threat_at(arena.cell_center(c))]
+			if arena.is_window(c):
+				col = Color(0.4, 0.85, 1.0)
+			elif arena.building_at(arena.cell_center(c)) != "":
+				col = col.lightened(0.25)
 			for sy in px:
 				for sx in px:
 					img.set_pixel(x * px + sx, y * px + sy, col)
